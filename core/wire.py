@@ -39,7 +39,7 @@ class WirePositionManager(BaseManager):
             pos_coord, vector_pos = return_pos_coord(polyline_with_sta, pos)
             next_type = data.poles[i + 1].Brackets[0].type
             span = data.poles[i].span
-            data.poles[i].coord = Vector3(pos_coord)
+            data.poles[i].coord = Vector3(*pos_coord)
             data.poles[i].vector = vector_pos
             current_structure = data.poles[i].current_structure
             contact_index = spandata.get_span_indices(self.designspeed, current_structure, 'contact', span)

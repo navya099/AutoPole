@@ -1,3 +1,4 @@
+from fileio.dxf_exporter import DxfManager
 from .pole import *
 from fileio.dataloader import *
 from fileio.bve_exporter import *
@@ -6,6 +7,7 @@ from .wire import WirePositionManager
 
 class MainProcess:
     def __init__(self, design_params, file_paths):
+        self.dxfmanager = None
         self.csvmanager = None
         self.wiremanager = None
         self.mastmanager = None
@@ -29,7 +31,8 @@ class MainProcess:
             ("🪛 브래킷 설치 중...", self.install_bracket),
             ("📐 마스트 배치 중...", self.place_mast),
             ("⚡ 와이어 배선 중...", self.route_wire),
-            ("📝 CSV 내보내는 중...", self.export_csv)
+            ("📝 CSV 내보내는 중...", self.export_csv),
+            ("📝 도면 내보내는 중...", self.export_dxf)
         ]
         total_steps = len(self.steps)
 
@@ -68,3 +71,8 @@ class MainProcess:
         self.csvmanager.create_csvtotxt()
         self.csvmanager.create_wire_csv()
         self.csvmanager.create_csvtotxt()
+
+    def export_dxf(self):
+        self.dxfmanager = DxfManager(self.pole_processor.poledata, self.wiremanager.wiredata)
+        self.dxfmanager.run()
+

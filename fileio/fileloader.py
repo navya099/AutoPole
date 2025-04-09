@@ -364,3 +364,18 @@ class ObjectSaver:
         import pickle
         with open(filename, 'wb') as file:
             pickle.dump(self.obj, file)
+
+
+class DxfFileHandler(BaseFileHandler):
+    """DXF 파일 저장을 위한 핸들러"""
+
+    def save_file_dialog(self):
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".dxf",
+            filetypes=[("DXF 파일", "*.dxf"), ("모든 파일", "*.*")]
+        )
+        if file_path:
+            self.filepath = file_path
+        else:
+            messagebox.showerror('에러!', '파일 경로가 설정되지 않았습니다.')
+            logger.warning("파일 경로가 설정되지 않았습니다.")

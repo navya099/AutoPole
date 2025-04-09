@@ -1,14 +1,11 @@
-import sys
 import random
 from tkinter import messagebox
 from enum import Enum
 import pandas as pd
-
-sys.path.append(r"..\BVEParser")
-from BVEclass import Vector3  # BVE CLASS Vector3로드
 from utils.logger import logger
 from fileio.fileloader import TxTFileHandler
 from utils.util import *
+from OpenBveApi.Math.Vectors.Vector3 import Vector3
 
 
 class AirJoint(Enum):
@@ -142,12 +139,6 @@ class PolePositionManager(BaseManager):
 
     def load_pole_positions_from_file(self) -> None:
         """txt 파일을 읽고 곧바로 '측점', '전주번호', '타입', '에어조인트' 정보를 반환하는 함수"""
-
-        data_list = []
-        positions = []
-        post_number_list = []
-        type_list = []
-        airjoint_list = []
 
         # 텍스트 파일(.txt) 읽기
         txtfile_handler = TxTFileHandler()
@@ -284,10 +275,12 @@ class PoleDATA:  # 기둥 브래킷 금구류 포함 데이터
         self.current_airjoint = ''
         self.gauge = 0.0
         self.span = 0.0
+
         self.coord = Vector3(0, 0, 0)
         self.ispreader = False
-        self.direction = '' # R,L
+        self.direction = ''  # R,L
         self.vector = 0.0  # 벡터 각도
+
 
 class BracketElement:
     def __init__(self):
@@ -347,11 +340,6 @@ class BracketManager(BaseManager):
 
     def create_bracket(self):
         data = self.poledata
-
-        install_type = None
-        gauge = None
-
-        current_type = None
 
         for i in range(len(data.poles) - 1):
             if self.mode == 0:  # 기존 노선용
