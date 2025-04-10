@@ -25,8 +25,8 @@ class WirePositionManager(BaseManager):
 
     def run(self):
         self.create_contact_wire()
-        self.create_feeder_wire()
-        self.create_af_wire()
+        self.create_wire_common('af')
+        self.create_wire_common('fpw')
 
     def create_contact_wire(self):
         data = self.poledata
@@ -37,9 +37,11 @@ class WirePositionManager(BaseManager):
             pos = data.poles[i].pos
             next_pos = data.poles[i + 1].pos
             pos_coord, vector_pos = return_pos_coord(polyline_with_sta, pos)
+            next_coord, next_vector = return_pos_coord(polyline_with_sta, next_pos)
             next_type = data.poles[i + 1].Brackets[0].type
             span = data.poles[i].span
             data.poles[i].coord = Vector3(*pos_coord)
+            data.poles[i + 1].coord = Vector3(*next_coord)
             data.poles[i].vector = vector_pos
             current_structure = data.poles[i].current_structure
             contact_index = spandata.get_span_indices(self.designspeed, current_structure, 'contact', span)
@@ -61,16 +63,57 @@ class WirePositionManager(BaseManager):
             wiredata.wires.append(block)
         self.wiredata = wiredata
 
-    def create_feeder_wire(self):
-        pass
+    def create_wire_common(self, wire_type: str):
+        data = self.poledata
+        spandata = self.spandata
+        wiredata = self.wiredata
+        polyline_with_sta = [(i * 25, *values) for i, values in enumerate(self.coord_list)]
 
-    def create_af_wire(self):
-        pass
+        for i in range(len(data.poles) - 1):
+            pos = data.poles[i].pos
+            next_pos = data.poles[i + 1].pos
+            span = data.poles[i].span
+            current_structure = data.poles[i].current_structure
+            next_structure = data.poles[i + 1].current_structure
+
+            index = spandata.get_span_indices(self.designspeed, current_structure, wire_type, span)
+            offset = spandata.get_offset(self.designspeed, wire_type, current_structure)
+            next_offset = spandata.get_offset(self.designspeed, wire_type, next_structure)
+            yaw, pitch, roll = self.calculate_wires_angle(
+                polyline_with_sta, pos, next_pos, span, (*offset, 0), (*next_offset, 0)
+            )
+
+            wire = getattr(wiredata.wires[i], f"{wire_type}wire")
+            wire.name = wire_type
+            wire.index = index
+            wire.xoffset = offset[0]
+            wire.yoffset = offset[1]
+            wire.xyangle = yaw
+            wire.yzangle = pitch
 
     @staticmethod
     def get_sign(poledirection, bracket_type):
         is_inner = bracket_type == 'I'
         return -1 if (poledirection == -1 and is_inner) or (poledirection != -1 and not is_inner) else 1
+
+    @staticmethod
+    def calculate_wires_angle(polyline_with_sta, pos, next_pos, length, start_offset, end_offset):
+        """
+        와이어 각도 계산 (Yaw, Pitch, Roll)
+        :param end_offset:  끝점 오프셋 tuple or list (x,y,z)
+        :param start_offset: 시작점 오프셋 tuple or list  (x,y,z)
+        :param polyline_with_sta: 좌표선 정보 list
+        :param pos: 시작 측점 int
+        :param next_pos: 다음 측점 int
+        :param length: 스팬 길이 int
+        :return: yaw, pitch, roll (roll은 현재 None) float
+        """
+        if None not in (start_offset, end_offset):
+            yaw = calculate_curve_angle(polyline_with_sta, pos, next_pos, start_offset[0], end_offset[0])
+            pitch = math.degrees(math.atan((end_offset[1] - start_offset[1]) / length))
+            roll = None  # 추후 횡단 경사 계산 등으로 구현 가능
+            return yaw, pitch, roll
+        return None, None, None
 
 
 class WireDataManager:
@@ -83,8 +126,8 @@ class WireDataManager:
 class WireDATA:
     def __init__(self):
         self.contactwire = ContactWireElement()  # 전차선 요소
-        self.feederwire = FeederWireElement()  # 급전선요소
-        self.afwire = AFwireElement()  # 보호선요소
+        self.afwire = FeederWireElement()  # 급전선요소
+        self.fpwwire = AFwireElement()  # 보호선요소
 
 
 class WireElement:

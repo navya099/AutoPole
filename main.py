@@ -1,13 +1,15 @@
 """
-bve 자동 전주 설계ㅐ 프로그램
-made by dger
+BVE 자동 전주 설계 프로그램
+Made by dger
 
-ver 2025.04.09
-2차 준공
-전주 전차선까지 처리 및 gui프로세스 개선
-스레딩 적용
-프로젝트 구조변경
+📌 Ver 1.0 (릴리스 버전)
+
+✅ 기능 요약:
+- 측점 기반 랜덤 전주 자동 배치
+- BVE용 CSV 출력 (전주, 전차선 포함)
+- 전차선 평면도 DXF 도면 자동 생성
 """
+
 from ui.main_gui import MainWindow
 
 

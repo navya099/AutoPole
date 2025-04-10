@@ -56,11 +56,29 @@ class DxfManager:
     def create_mast(self, data, i, pos_coord, pos_coord_with_offset):
         self.msp.add_circle(pos_coord_with_offset, radius=1.5 * self.h_scale, dxfattribs={'layer': '전주', 'color': 4})
 
-    def create_wire(self, wiredata, i, pos_coord, next_coord, vector_pos, next_vector):
+    def create_wire(self, data, wiredata, i, pos_coord, next_coord, vector_pos, next_vector):
         start_coord = calculate_offset_point(vector_pos, pos_coord, wiredata.wires[i].contactwire.stagger)
         end_coord = calculate_offset_point(next_vector, next_coord, wiredata.wires[i + 1].contactwire.stagger)
 
         self.msp.add_line(start_coord, end_coord, dxfattribs={'layer': '전차선', 'color': 3})
+        self.create_af(data, wiredata, i, pos_coord, next_coord, vector_pos, next_vector)
+        self.create_fpw(data, wiredata, i, pos_coord, next_coord, vector_pos, next_vector)
+
+    def create_af(self, data, wiredata, i, pos_coord, next_coord, vector_pos, next_vector):
+
+        start_coord = calculate_offset_point(vector_pos, pos_coord, data.poles[i].gauge +
+                                             wiredata.wires[i].afwire.xoffset)
+        end_coord = calculate_offset_point(next_vector, next_coord, data.poles[i + 1].gauge +
+                                           wiredata.wires[i + 1].afwire.xoffset)
+        self.msp.add_line(start_coord, end_coord, dxfattribs={'layer': '급전선', 'color': 3})
+
+    def create_fpw(self, data, wiredata, i, pos_coord, next_coord, vector_pos, next_vector):
+
+        start_coord = calculate_offset_point(vector_pos, pos_coord, data.poles[i].gauge +
+                                             wiredata.wires[i].fpwwire.xoffset)
+        end_coord = calculate_offset_point(next_vector, next_coord, data.poles[i + 1].gauge +
+                                           wiredata.wires[i + 1].fpwwire.xoffset)
+        self.msp.add_line(start_coord, end_coord, dxfattribs={'layer': '보호선', 'color': 3})
 
     def create_alignmnet(self):
         # 선형 플롯

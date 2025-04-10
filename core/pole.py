@@ -263,8 +263,9 @@ class PoleDATA:  # 기둥 브래킷 금구류 포함 데이터
     def __init__(self):
         self.mast = MastDATA()  # 기둥 요소
         self.Brackets = []  # 브래킷을 담을 리스트
-        bracketdata = BracketElement()  # 인스턴스 생성
+        bracketdata = BracketElement()  # 브래킷 인스턴스 생성
         self.Brackets.append(bracketdata)  # 리스트에 인스턴스 추가
+        self.feeder = FeederDATA()  # 급전선 설비
         self.pos = 0.0  # station
         self.post_number = ''
         self.current_curve = ''
@@ -430,3 +431,33 @@ class BracketManager(BaseManager):
             current_type = 'O' if current_type == 'I' else 'I'
             bracket_name = 'outer' if bracket_name == 'inner' else 'inner'
         return current_type, bracket_name
+
+
+class FeederManager(BaseManager):
+    def __init__(self, params, poledata):
+        super().__init__(params, poledata)
+
+    def run(self):
+        self.create_feeder()
+
+    def create_feeder(self):
+        data = self.poledata
+        speed = self.designspeed
+        for i in range(len(data.poles) - 1):
+            current_structure = data.poles[i].current_structure
+            # 구조별 설계속도에 따른 피더 인덱스 맵
+            feeder_map = {
+                ('토공', 150): 1234,
+                ('토공', 250): 1234,
+                ('토공', 350): 597,
+                ('교량', 150): 1234,
+                ('교량', 250): 1234,
+                ('교량', 350): 597,
+                ('터널', 150): 1249,
+                ('터널', 250): 1249,
+                ('터널', 350): 598,
+            }
+
+            feederindex = feeder_map.get((current_structure, speed), 1234)
+            data.poles[i].feeder.index = feederindex
+            data.poles[i].feeder.name = '급전선 지지물'

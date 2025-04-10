@@ -7,6 +7,7 @@ from .wire import WirePositionManager
 
 class MainProcess:
     def __init__(self, design_params, file_paths):
+        self.feedermanager = None
         self.dxfmanager = None
         self.csvmanager = None
         self.wiremanager = None
@@ -29,6 +30,7 @@ class MainProcess:
             ("📦 데이터 로딩 중...", self.load_data),
             ("📍 전주 배치 계산 중...", self.calc_pole),
             ("🪛 브래킷 설치 중...", self.install_bracket),
+            ("🪛 급전선 설치 중...", self.install_feeder),
             ("📐 마스트 배치 중...", self.place_mast),
             ("⚡ 와이어 배선 중...", self.route_wire),
             ("📝 CSV 내보내는 중...", self.export_csv),
@@ -60,6 +62,10 @@ class MainProcess:
     def place_mast(self):
         self.mastmanager = MastManager(self.loader.params, self.pole_processor.poledata)
         self.mastmanager.run()
+
+    def install_feeder(self):
+        self.feedermanager = FeederManager(self.loader.params, self.pole_processor.poledata)
+        self.feedermanager.run()
 
     def route_wire(self):
         self.wiremanager = WirePositionManager(self.loader.params, self.pole_processor.poledata)

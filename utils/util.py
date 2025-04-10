@@ -398,11 +398,25 @@ def interpolate_coordinates(polyline, target_sta):
         if sta1 <= target_sta < sta2:
             t = abs(target_sta - sta1)
             x, y = calculate_destination_coordinates(x1, y1, v1, t)
-            z = z1 + t * (z2 - z1)
+            z = calculate_height(z1, z2, sta2 - sta1, t)
             return (x, y, z), (x1, y1, z1), v1
 
     return None  # 범위를 벗어난 sta 값에 대한 처리
 
+
+def calculate_height(z1, z2, l, horizontal_distance):
+    # 높이 차이
+    delta_z = z2 - z1
+
+    # 경사면 전체 길이에 대한 경사율
+    slope = delta_z / l
+
+    # 수평 거리만큼 진행했을 때 높이 변화량
+    delta_z_x = slope * horizontal_distance
+
+    # 최종 높이
+    z = z1 + delta_z_x
+    return z
 
 def calculate_bearing(x1, y1, x2, y2):
     # Calculate the bearing (direction) between two points in Cartesian coordinates
@@ -471,18 +485,30 @@ def get_wire_span_data(designspeed, currentspan, current_structure):
 
 
 def calculate_curve_angle(polyline_with_sta, pos, next_pos, stagger1, stagger2):
-    final_anlge = None
+    """
+        전차선의 좌우 offset을 고려한 yaw 각도 계산 함수
+        :param polyline_with_sta: 선형 좌표 리스트
+        :param pos: 시작 측점
+        :param next_pos: 끝 측점
+        :param stagger1: 시작점 좌우 offset
+        :param stagger2: 끝점 좌우 offset
+        :return: yaw angle (degrees)
+    """
+    final_anlge = None  # 변수초기화
+
+    # 시작pos와 끝 pos의 좌표와 폴리선 벡터 반환
     point_a, _, vector_a = interpolate_coordinates(polyline_with_sta, pos)
     point_b, _, vector_b = interpolate_coordinates(polyline_with_sta, next_pos)
 
     if point_a and point_b:
+        # offset 점 계산
         offset_point_a = calculate_offset_point(vector_a, point_a, stagger1)
         offset_point_b = calculate_offset_point(vector_b, point_b, stagger2)
 
-        offset_point_a_z = (offset_point_a[0], offset_point_a[1], 0)  # Z값 0추가
-        offset_point_b_z = (offset_point_b[0], offset_point_b[1], 0)  # Z값 0추가
-
+        # offset점끼리의 각도
         a_b_angle = calculate_bearing(offset_point_a[0], offset_point_a[1], offset_point_b[0], offset_point_b[1])
+
+        # 최종 각도
         final_anlge = vector_a - a_b_angle
     return final_anlge
 
