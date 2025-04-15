@@ -31,7 +31,7 @@ class BVECSV:
             self.lines.append(f',;-----{current_airjoint}({current_structure})({current_curve})-----\n')
             self.lines.append(f'{pos},.freeobj 0;{mastindex};{gauge},;{mastname}\n')
             self.lines.append(f'{pos},.freeobj 0;{bracketindex};0;0;{pitch};,;{bracketname}\n\n')
-            self.lines.append(f'{pos},.freeobj 0;{feederindex};0;0;0;,;{feedername}\n\n')
+            self.lines.append(f'{pos},.freeobj 0;{feederindex};{gauge};0;{pitch};,;{feedername}\n\n')
 
     def create_wire_csv(self):
         self.lines = []  # 코드 실행전 초기화

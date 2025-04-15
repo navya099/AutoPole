@@ -11,7 +11,7 @@ bve_path = os.path.join(base_path, 'bveparser')
 
 if bve_path not in sys.path:
     sys.path.insert(0, bve_path)
-from OpenBveApi.Math.Vectors.Vector3 import Vector3
+from BVEParser.OpenBveApi.Math.Vectors.Vector3 import Vector3
 
 config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'span_data.json')
 
@@ -86,8 +86,8 @@ class WirePositionManager(BaseManager):
                 next_offset[0] *= -1
             # offset에 gauge를 더하여 보정. x만 y는 제외(offset은 토공을 기준으로 0)
             # offset 다시 tuple로 pack
-            offset = (offset[0] + gauge, offset[1], 0)
-            next_offset = (next_offset[0] + gauge, next_offset[1], 0)
+            offset = (offset[0], offset[1], 0)
+            next_offset = (next_offset[0], next_offset[1], 0)
 
             yaw, pitch, roll = self.calculate_wires_angle(
                 polyline_with_sta, pos, next_pos, span, offset, next_offset
