@@ -1,10 +1,18 @@
+import os
 import random
+import sys
 from tkinter import messagebox
 from enum import Enum
 import pandas as pd
 from utils.logger import logger
 from fileio.fileloader import TxTFileHandler
 from utils.util import *
+# 현재 main.py 기준으로 상위 폴더에서 bveparser 경로 추가
+base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+bve_path = os.path.join(base_path, 'bveparser')
+
+if bve_path not in sys.path:
+    sys.path.insert(0, bve_path)
 from OpenBveApi.Math.Vectors.Vector3 import Vector3
 
 
@@ -443,20 +451,21 @@ class FeederManager(BaseManager):
     def create_feeder(self):
         data = self.poledata
         speed = self.designspeed
+        # 구조별 설계속도에 따른 피더 인덱스 맵
+        feeder_map = {
+            ('토공', 150): 1234,
+            ('토공', 250): 1234,
+            ('토공', 350): 597,
+            ('교량', 150): 1234,
+            ('교량', 250): 1234,
+            ('교량', 350): 597,
+            ('터널', 150): 1249,
+            ('터널', 250): 1249,
+            ('터널', 350): 598,
+        }
+
         for i in range(len(data.poles) - 1):
             current_structure = data.poles[i].current_structure
-            # 구조별 설계속도에 따른 피더 인덱스 맵
-            feeder_map = {
-                ('토공', 150): 1234,
-                ('토공', 250): 1234,
-                ('토공', 350): 597,
-                ('교량', 150): 1234,
-                ('교량', 250): 1234,
-                ('교량', 350): 597,
-                ('터널', 150): 1249,
-                ('터널', 250): 1249,
-                ('터널', 350): 598,
-            }
 
             feederindex = feeder_map.get((current_structure, speed), 1234)
             data.poles[i].feeder.index = feederindex

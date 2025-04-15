@@ -39,7 +39,7 @@ class DxfManager:
 
             self.create_mast(data, i, pos_coord, pos_coord_with_offset)  # 전주 생성
             self.create_bracket(data, i, pos_coord, pos_coord_with_offset, char_height)  # 브래킷 생성
-            self.create_wire(wiredata, i, pos_coord, next_pos_coord, vector_pos, next_vector)  # 전선 생성
+            self.create_wire(data, wiredata, i, pos_coord, next_pos_coord, vector_pos, next_vector)  # 전선 생성
 
     def crate_pegging_plan_mast_and_bracket(self):
         pass

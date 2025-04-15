@@ -75,12 +75,22 @@ class WirePositionManager(BaseManager):
             span = data.poles[i].span
             current_structure = data.poles[i].current_structure
             next_structure = data.poles[i + 1].current_structure
-
+            gauge = data.poles[i].gauge
             index = spandata.get_span_indices(self.designspeed, current_structure, wire_type, span)
-            offset = spandata.get_offset(self.designspeed, wire_type, current_structure)
-            next_offset = spandata.get_offset(self.designspeed, wire_type, next_structure)
+            offset = list(spandata.get_offset(self.designspeed, wire_type, current_structure))
+            next_offset = list(spandata.get_offset(self.designspeed, wire_type, next_structure))
+
+            # gauge에 따라 부호 적용
+            if gauge < 0:
+                offset[0] *= -1
+                next_offset[0] *= -1
+            # offset에 gauge를 더하여 보정. x만 y는 제외(offset은 토공을 기준으로 0)
+            # offset 다시 tuple로 pack
+            offset = (offset[0] + gauge, offset[1], 0)
+            next_offset = (next_offset[0] + gauge, next_offset[1], 0)
+
             yaw, pitch, roll = self.calculate_wires_angle(
-                polyline_with_sta, pos, next_pos, span, (*offset, 0), (*next_offset, 0)
+                polyline_with_sta, pos, next_pos, span, offset, next_offset
             )
 
             wire = getattr(wiredata.wires[i], f"{wire_type}wire")
@@ -184,7 +194,7 @@ class SpanDatabase:
 
     def get_offset(self, speed_code, wire_type, structure_type):
         try:
-            return tuple(self._data[speed_code]["wires"][wire_type]["offset"][structure_type])
+            return tuple(self._data[str(speed_code)][structure_type][wire_type]["offset"])
         except KeyError:
             return 0, 0
 

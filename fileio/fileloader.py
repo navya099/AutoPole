@@ -1,6 +1,6 @@
 import datetime
 
-from loggermodule import logger
+from utils.logger import logger
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 import os
