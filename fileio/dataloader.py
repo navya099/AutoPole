@@ -69,6 +69,7 @@ class DataLoader:
         if self.structure_path:
             self.excelprocessor.set_filepath(self.structure_path)
             self.struct_dic = self.excelprocessor.process_structure_data()
+
         else:
             logger.error("structure 파일 경로가 설정되지 않았습니다.")
             self.struct_dic = {}

@@ -2,17 +2,58 @@ import re
 import math
 from dataclasses import dataclass
 from typing import Dict
+from .logger import logger
+from typing import Literal
 
 
-def isbridge_tunnel(sta, structure_list):
-    """sta가 교량/터널/토공 구간에 해당하는지 구분하는 함수"""
-    for start, end in structure_list['bridge']:
-        if start <= sta <= end:
-            return '교량'
+def validate_structure_list(structure_list: dict) -> bool:
+    """
+    입력 딕셔너리 리스트를 검증하는 유틸함수
+    :param structure_list:
+    :return: bool
+    """
+    if not isinstance(structure_list, dict):
+        raise TypeError("structure_list must be a dictionary.")
 
-    for start, end in structure_list['tunnel']:
-        if start <= sta <= end:
-            return '터널'
+    for key in ['bridge', 'tunnel']:
+        if key in structure_list:
+            value = structure_list[key]
+            if not isinstance(value, list):
+                raise TypeError(f"'{key}' must be a list of (start, end) tuples.")
+
+            for i, item in enumerate(value):
+                if not (isinstance(item, tuple) and len(item) == 2):
+                    raise TypeError(f"Item at index {i} in '{key}' must be a tuple with two elements.")
+
+                start, end = item
+                if not (isinstance(start, (int, float)) and isinstance(end, (int, float))):
+                    raise TypeError(f"Start and end values in '{key}[{i}]' must be int or float.")
+        return True
+
+
+def isbridge_tunnel(sta: float, structure_list: dict) -> Literal['교량', '터널', '토공']:
+    """
+    주어진 위치 sta가 교량, 터널, 또는 기본적으로 토공인지 판별하는 함수.
+
+    :param int sta: 위치 (거리값)
+    :param structure_list: dict {'bridge': [(start, end)], 'tunnel': [(start, end)]}
+    :return: str:'교량', '터널', 또는 '토공' 실패시에도 '토공' 반환
+    """
+    ...
+    try:
+        validate_structure_list(structure_list)
+
+        for start, end in structure_list.get('bridge', []):
+            if start <= sta <= end:
+                return '교량'
+
+        for start, end in structure_list.get('tunnel', []):
+            if start <= sta <= end:
+                return '터널'
+
+    except Exception as ex:
+        logger.error(
+            f"🚨 structure_list validation failed: {type(ex).__name__} - {ex} | sta={sta}")
 
     return '토공'
 
@@ -417,6 +458,7 @@ def calculate_height(z1, z2, l, horizontal_distance):
     # 최종 높이
     z = z1 + delta_z_x
     return z
+
 
 def calculate_bearing(x1, y1, x2, y2):
     # Calculate the bearing (direction) between two points in Cartesian coordinates

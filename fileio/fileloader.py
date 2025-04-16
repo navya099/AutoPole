@@ -291,9 +291,11 @@ class ExcelFileHandler(BaseFileHandler):
             return None
 
         try:
+            # 첫 번째 열만 str 형식으로, 나머지는 자동 형식
+            dtype_dict = {0: str}  # 첫 번째 열만 str로 설정 (0번째 인덱스 열)
             # xlsx 파일 읽기
-            self.excel_BRIDGE_Data = pd.read_excel(self.filepath, sheet_name='교량', header=0)  # 첫 번째 행을 헤더로 사용
-            self.excel_TUNNEL_Data = pd.read_excel(self.filepath, sheet_name='터널', header=0)
+            self.excel_BRIDGE_Data = pd.read_excel(self.filepath, sheet_name='교량', header=None, dtype=dtype_dict)  # 첫 번째 행을 헤더로 사용
+            self.excel_TUNNEL_Data = pd.read_excel(self.filepath, sheet_name='터널', header=None, dtype=dtype_dict)
             logger.info("엑셀 파일이 성공적으로 읽혔습니다.")
         except FileNotFoundError:
             logger.error(f"엑셀 파일을 찾을 수 없습니다: {self.filepath}")
@@ -332,6 +334,8 @@ class ExcelFileHandler(BaseFileHandler):
             logger.error(f"구조 데이터 처리 중 오류 발생: {e}", exc_info=True)
             return None
 
+        print("==== TUNNEL DATA DEBUG ====")
+        print(self.excel_TUNNEL_Data.head(5))  # 상위 5개만 확인
         return structure_dic
 
 

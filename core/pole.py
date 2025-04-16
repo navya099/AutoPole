@@ -4,9 +4,12 @@ import sys
 from tkinter import messagebox
 from enum import Enum
 import pandas as pd
-from utils.logger import logger
+from utils.logger import logger, save_exception_to_csv
 from fileio.fileloader import TxTFileHandler
 from utils.util import *
+from datetime import datetime
+
+
 # 현재 main.py 기준으로 상위 폴더에서 bveparser 경로 추가
 base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 bve_path = os.path.join(base_path, 'bveparser')
@@ -92,40 +95,51 @@ class PolePositionManager(BaseManager):
         """전주 위치 데이터를 가공"""
 
         data = PoleDATAManager()  # 인스턴스 생성
-        for i in range(len(self.pole_positions) - 1):
-            pos = self.pole_positions[i]  # 전주 위치 station
-            next_pos = self.pole_positions[i + 1]  # 다음 전주 위치 station
+        try:
+            for i in range(len(self.pole_positions) - 1):
+                pos = self.pole_positions[i]  # 전주 위치 station
+                next_pos = self.pole_positions[i + 1]  # 다음 전주 위치 station
 
-            data.poles[i].pos = pos
+                data.poles[i].pos = pos
 
-            current_span = next_pos - pos  # 현재 전주 span
-            data.poles[i].span = current_span
-            # 현재 위치의 구조물 및 곡선 정보 가져오기
-            current_structure = isbridge_tunnel(pos, self.struct_list)
-            data.poles[i].current_structure = current_structure  # 현재 전주 위치의 구조물
-            current_curve, r, c = iscurve(pos, self.curve_list)  # 현재 전주 위치의 곡선
-            data.poles[i].current_curve = current_curve
-            data.poles[i].radius = r
-            data.poles[i].cant = c
+                current_span = next_pos - pos  # 현재 전주 span
+                data.poles[i].span = current_span
+                # 현재 위치의 구조물 및 곡선 정보 가져오기
+                current_structure = isbridge_tunnel(pos, self.struct_list)
+                data.poles[i].current_structure = current_structure  # 현재 전주 위치의 구조물
+                current_curve, r, c = iscurve(pos, self.curve_list)  # 현재 전주 위치의 곡선
+                data.poles[i].current_curve = current_curve
+                data.poles[i].radius = r
+                data.poles[i].cant = c
 
-            current_slope, pitch = isslope(pos, self.pitch_list)  # 현재 전주 위치의 구배
-            data.poles[i].pitch = pitch
+                current_slope, pitch = isslope(pos, self.pitch_list)  # 현재 전주 위치의 구배
+                data.poles[i].pitch = pitch
 
-            current_airjoint = check_isairjoint(pos, self.airjoint_list)  # 현재 전주 위치의 AJ
-            data.poles[i].current_airjoint = current_airjoint
+                current_airjoint = check_isairjoint(pos, self.airjoint_list)  # 현재 전주 위치의 AJ
+                data.poles[i].current_airjoint = current_airjoint
 
-            post_number = find_post_number(self.post_number_lst, pos)  # 현재 전주넘버
-            data.poles[i].post_number = post_number
+                post_number = find_post_number(self.post_number_lst, pos)  # 현재 전주넘버
+                data.poles[i].post_number = post_number
 
-            # final
-            block = PoleDATA()  # 폴 블록 생성
-            data.poles.append(block)
+                # final
+                block = PoleDATA()  # 폴 블록 생성
+                data.poles.append(block)
 
-        self.poledata = data
-        if self.poledata is None:
-            logger.error("🚨 self.poledata가 None입니다! 데이터 생성에 실패했습니다.")
-        else:
+            # 속성에 추가
+            self.poledata = data
             logger.debug(f"✅ self.poledata가 정상적으로 생성되었습니다. 전주 개수: {len(self.poledata.poles)}")
+        except Exception as ex:
+            # Ensure current_structure is defined before the exception block
+            loggerdata = {
+                'i': i if 'i' in locals() else None,  # Check if i is defined
+                'pos': pos if 'pos' in locals() else None,
+                'current_structure': current_structure if 'current_structure' in locals() else None,
+                'error': str(ex),
+                'timestamp': datetime.now().isoformat()
+            }
+            save_exception_to_csv(loggerdata)
+            self.poledata = None
+            logger.error("🚨 self.poledata가 None입니다! 데이터 생성에 실패했습니다.")
 
     @staticmethod
     def generate_postnumbers(lst):
