@@ -1,5 +1,5 @@
 from fileio.dxf_exporter import DxfManager
-from .Brackets import BracketManager
+from .brackets import BracketManager
 from .pole import *
 from fileio.dataloader import *
 from fileio.bve_exporter import *

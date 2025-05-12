@@ -67,17 +67,17 @@ class DxfManager:
     def create_af(self, data, wiredata, i, pos_coord, next_coord, vector_pos, next_vector):
 
         start_coord = calculate_offset_point(vector_pos, pos_coord, data.poles[i].gauge +
-                                             wiredata.wires[i].afwire.xoffset)
+                                             wiredata.wires[i].afwire.positionx)
         end_coord = calculate_offset_point(next_vector, next_coord, data.poles[i + 1].gauge +
-                                           wiredata.wires[i + 1].afwire.xoffset)
+                                           wiredata.wires[i + 1].afwire.positionx)
         self.msp.add_line(start_coord, end_coord, dxfattribs={'layer': '급전선', 'color': 3})
 
     def create_fpw(self, data, wiredata, i, pos_coord, next_coord, vector_pos, next_vector):
 
         start_coord = calculate_offset_point(vector_pos, pos_coord, data.poles[i].gauge +
-                                             wiredata.wires[i].fpwwire.xoffset)
+                                             wiredata.wires[i].fpwwire.positionx)
         end_coord = calculate_offset_point(next_vector, next_coord, data.poles[i + 1].gauge +
-                                           wiredata.wires[i + 1].fpwwire.xoffset)
+                                           wiredata.wires[i + 1].fpwwire.positionx)
         self.msp.add_line(start_coord, end_coord, dxfattribs={'layer': '보호선', 'color': 3})
 
     def create_alignmnet(self):

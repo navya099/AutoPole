@@ -96,16 +96,22 @@ def isslope(cur_sta, curve_list):
     return '수평', 0  # 목록에 없으면 기본적으로 직선 처리
 
 
-def find_last_block(data):
-    last_block = None  # None으로 초기화하여 값이 없을 때 오류 방지
+def find_last_block(data: list[str]) -> int:
+    """
+    주어진 문자열 리스트의 마지막 요소에서 블록 값을 추출하여 반환합니다.
 
-    for line in data:
-        if isinstance(line, str):  # 문자열인지 확인
-            match = re.search(r'(\d+),', line)
-            if match:
-                last_block = int(match.group(1))  # 정수 변환하여 저장
+    :param data: 예: ['25.0,0.0,0.0', '30.0,1.0,2.0']
+    :return: 마지막 블록의 float 값 (예: 30.0)
+    """
+    if not data:
+        raise ValueError("입력 데이터가 비어 있습니다.")
 
-    return last_block  # 마지막 블록 값 반환
+    try:
+        last_line = data[-1]
+        block_value = float(last_line.split(',')[0])
+        return int(block_value)
+    except (IndexError, ValueError) as e:
+        raise ValueError(f"마지막 블록 값을 파싱하는 중 오류 발생: {e}")
 
 
 def find_post_number(lst, pos):
@@ -176,7 +182,9 @@ def return_pos_coord(polyline_with_sta, pos):
     return point_a, vector_a
 
 
-def interpolate_coordinates(polyline, target_sta):
+def interpolate_coordinates(
+        polyline: list[tuple[int, float, float, float]], target_sta: int) -> \
+        tuple[tuple[float, float, float], tuple[float, float, float], float]:
     """
     주어진 폴리선 데이터에서 특정 sta 값에 대한 좌표를 선형 보간하여 반환.
 
@@ -194,9 +202,9 @@ def interpolate_coordinates(polyline, target_sta):
             t = abs(target_sta - sta1)
             x, y = calculate_destination_coordinates(x1, y1, v1, t)
             z = calculate_height(z1, z2, sta2 - sta1, t)
-            return (x, y, z), (x1, y1, z1), v1
-
-    return None  # 범위를 벗어난 sta 값에 대한 처리
+            interpolate_coord = (x, y, z)
+            origin_coord = (x1, y1, z1)
+            return interpolate_coord, origin_coord, v1
 
 
 def calculate_height(z1, z2, length, horizontal_distance):
@@ -214,7 +222,7 @@ def calculate_height(z1, z2, length, horizontal_distance):
     return z
 
 
-def calculate_bearing(x1, y1, x2, y2):
+def calculate_bearing(x1: float, y1: float, x2: float, y2: float) -> float:
     # Calculate the bearing (direction) between two points in Cartesian coordinates
     dx = x2 - x1
     dy = y2 - y1
@@ -222,7 +230,7 @@ def calculate_bearing(x1, y1, x2, y2):
     return bearing
 
 
-def calculate_destination_coordinates(x1, y1, bearing, distance):
+def calculate_destination_coordinates(x1: float, y1: float, bearing: float, distance: float) -> tuple[float, float]:
     # Calculate the destination coordinates given a starting point, bearing, and distance in Cartesian coordinates
     angle = math.radians(bearing)
     x2 = x1 + distance * math.cos(angle)
@@ -280,17 +288,19 @@ def get_wire_span_data(designspeed, currentspan, current_structure):
     return idx_value, comment, feeder_idx, fpw_idx
 
 
-def calculate_curve_angle(polyline_with_sta, pos, next_pos, stagger1, stagger2):
+def calculate_curve_angle(
+        polyline_with_sta: list[tuple[int, float, float, float]],
+        pos: int, next_pos: int, stagger1: float, stagger2: float) -> float:
     """
-        전차선의 좌우 offset을 고려한 yaw 각도 계산 함수
-        :param polyline_with_sta: 선형 좌표 리스트
-        :param pos: 시작 측점
-        :param next_pos: 끝 측점
-        :param stagger1: 시작점 좌우 offset
-        :param stagger2: 끝점 좌우 offset
-        :return: yaw angle (degrees)
+    전차선의 좌우 offset을 고려한 yaw 각도 계산 함수
+    :param polyline_with_sta: 선형 좌표 리스트
+    :param pos: 시작 측점
+    :param next_pos: 끝 측점
+    :param stagger1: 시작점 좌우 offset
+    :param stagger2: 끝점 좌우 offset
+    :return: yaw angle (degrees)
     """
-    final_anlge = None  # 변수초기화
+    final_anlge = 0.0  # 변수초기화
 
     # 시작pos와 끝 pos의 좌표와 폴리선 벡터 반환
     point_a, _, vector_a = interpolate_coordinates(polyline_with_sta, pos)
@@ -310,7 +320,8 @@ def calculate_curve_angle(polyline_with_sta, pos, next_pos, stagger1, stagger2):
 
 
 # offset 좌표 반환
-def calculate_offset_point(vector, point_a, offset_distance):
+def calculate_offset_point(vector: float, point_a: tuple[float, float, float], offset_distance: float) -> \
+        tuple[float, float]:
     if offset_distance > 0:  # 우측 오프셋
         vector -= 90
     else:
@@ -319,7 +330,7 @@ def calculate_offset_point(vector, point_a, offset_distance):
     return offset_a_xy
 
 
-def change_permile_to_degree(permile):
+def change_permile_to_degree(permile: float) -> float:
     """퍼밀 값을 도(degree)로 변환"""
     # 정수 또는 문자열이 들어오면 float으로 변환
     if not isinstance(permile, (int, float)):
@@ -328,7 +339,7 @@ def change_permile_to_degree(permile):
     return math.degrees(math.atan(permile / 1000))  # 퍼밀을 비율로 변환 후 계산
 
 
-def calculate_slope(h1, h2, gauge):
+def calculate_slope(h1: float, h2: float, gauge: float) -> float:
     """주어진 높이 차이와 수평 거리를 바탕으로 기울기(각도) 계산"""
     slope = (h2 - h1) / gauge  # 기울기 값 (비율)
     return math.degrees(math.atan(slope))  # 아크탄젠트 적용 후 degree 변환

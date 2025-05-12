@@ -46,15 +46,15 @@ class BVECSV:
             current_curve = data.poles[i].current_curve
             contact_index = wiredata.wires[i].contactwire.index
             af_index = wiredata.wires[i].afwire.index
-            af_x = wiredata.wires[i].afwire.xoffset
-            af_y = wiredata.wires[i].afwire.yoffset
+            af_x = wiredata.wires[i].afwire.positionx
+            af_y = wiredata.wires[i].afwire.positiony
             af_yaw = wiredata.wires[i].afwire.xyangle
             af_pitch = wiredata.wires[i].afwire.yzangle
             af_name = wiredata.wires[i].afwire.name.upper()
 
             fpw_index = wiredata.wires[i].fpwwire.index
-            fpw_x = wiredata.wires[i].fpwwire.xoffset
-            fpw_y = wiredata.wires[i].fpwwire.yoffset
+            fpw_x = wiredata.wires[i].fpwwire.positionx
+            fpw_y = wiredata.wires[i].fpwwire.positiony
             fpw_yaw = wiredata.wires[i].fpwwire.xyangle
             fpw_pitch = wiredata.wires[i].fpwwire.yzangle
             fpw_name = wiredata.wires[i].fpwwire.name.upper()

@@ -296,7 +296,7 @@ class PoleDATAManager:  # 전체 총괄
     전주전체 총괄 클래스
 
     Attributes:
-        poles (list): 개별 pole 데어터를 저장할 리스트
+        poles (list): 개별 PoleDATA 저장할 리스트
     """
 
     def __init__(self):
@@ -305,10 +305,10 @@ class PoleDATAManager:  # 전체 총괄
         self.poles.append(pole)
 
 
-class PoleDATA:  # 기둥 브래킷 금구류 포함 데이터
+class PoleDATA:
     """
         전주 설비 전체를 나타내는 데이터 구조
-
+        기둥 브래킷 금구류 포함 데이터
         Attributes:
             mast (MastDATA): 기둥 요소
             Brackets (list[BracketElement]): 브래킷 목록
@@ -322,7 +322,7 @@ class PoleDATA:  # 기둥 브래킷 금구류 포함 데이터
             pitch (float): 구배
             current_airjoint (str): 에어조인트 여부(일반/에어조인트)
             gauge (float): 궤간
-            span (float): 전주 간 거리
+            span (int): 전주 간 거리
             coord (Vector3): 전주의 3D 좌표
             ispreader (bool): 평행틀 유무
             direction (str): 방향 (R/L)
@@ -345,9 +345,9 @@ class PoleDATA:  # 기둥 브래킷 금구류 포함 데이터
         self.pitch: float = 0.0  # 구배
         self.current_airjoint: str = ''  # 에어조인트 위치
         self.gauge: float = 0.0  # 궤간
-        self.span: float = 0.0  # 전주 간 거리
+        self.span: int = 0  # 전주 간 거리
 
-        self.coord: Vector3 = Vector3(0, 0, 0)  # 3D 좌표
+        self.coord: Vector3 = Vector3.Zero()  # 3D 좌표
         self.ispreader: bool = False  # 스프레더 여부
         self.direction: str = ''  # 방향 (R, L)
         self.vector: float = 0.0  # 벡터 각도
@@ -373,12 +373,16 @@ class Element:
 
 
 class BracketElement(Element):
-    pass
+    """
+    브래킷 요소 Element상속
+    """
+    def __init__(self):
+        super().__init__()
 
 
 class MastDATA(Element):
     """
-     전주 요소
+     전주 요소  Element상속
      Attributes:
          height(float):  전주높이(m)
          width(float): 전주폭(mm)
@@ -397,7 +401,7 @@ class MastDATA(Element):
 
 
 class FeederDATA(Element):
-    """급전선 설비 데이터를 설정하는 클래스"""
+    """급전선 설비 데이터를 설정하는 클래스 Element 상속"""
 
     def __init__(self):
         super().__init__()
@@ -405,6 +409,8 @@ class FeederDATA(Element):
 
 class MastManager(BaseManager):
     """전주(Mast) 데이터를 설정하는 클래스"""
+    def __init__(self, params, poledata):
+        super().__init__(params, poledata)
 
     def run(self):
         self.create_mast()
@@ -419,6 +425,7 @@ class MastManager(BaseManager):
 
 
 class FeederManager(BaseManager):
+    """급전선 설비(전선x) 데이터를 설정하는 클래스"""
     def __init__(self, params, poledata):
         super().__init__(params, poledata)
 
