@@ -1,4 +1,5 @@
 from fileio.dxf_exporter import DxfManager
+from .Brackets import BracketManager
 from .pole import *
 from fileio.dataloader import *
 from fileio.bve_exporter import *
@@ -6,7 +7,7 @@ from .wire import WirePositionManager
 
 
 class MainProcess:
-    def __init__(self, design_params, file_paths):
+    def __init__(self, design_params: dict[str, int | float], file_paths: dict[str, str]):
         self.feedermanager = None
         self.dxfmanager = None
         self.csvmanager = None

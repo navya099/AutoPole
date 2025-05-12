@@ -1,22 +1,11 @@
-import os
 import random
-import sys
-from tkinter import messagebox
+import traceback
 from enum import Enum
 import pandas as pd
-from utils.logger import logger, save_exception_to_csv
 from fileio.fileloader import TxTFileHandler
 from utils.util import *
-from datetime import datetime
-
-
-# 현재 main.py 기준으로 상위 폴더에서 bveparser 경로 추가
-base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-bve_path = os.path.join(base_path, 'bveparser')
-
-if bve_path not in sys.path:
-    sys.path.insert(0, bve_path)
-from OpenBveApi.Math.Vectors.Vector3 import Vector3
+from utils.Vector3 import Vector3
+from typing import Optional
 
 
 class AirJoint(Enum):
@@ -28,121 +17,139 @@ class AirJoint(Enum):
 
 
 class BaseManager:
-    """MastManager와 BracketManager의 공통 기능을 관리하는 부모 클래스"""
+    """MastManager와 BracketManager의 공통 기능을 관리하는 부모 클래스
 
-    def __init__(self, params, poledata=None):
-        self.poledata = poledata  # ✅ PoleDATAManager.poledata 인스턴스를 가져옴
+    Attributes:
+        poledata (Optional[PoleDATAManager]): 전주 데이터
+        params (tuple): (설계 파라미터 딕셔너리, 데이터 리스트)
+        design_params (dict): 설계 파라미터
+        designspeed (float): 설계속도
+        linecount (float): 선로갯수
+        lineoffset (float): 선로 간격
+        poledirection (int): 전주 방향 (-1/1)
+        mode (int): 현재 모드 (0:기존노선용/ 1:새 노선용)
+    """
+
+    def __init__(self, params: tuple, poledata: Optional['PoleDATAManager'] = None):
+        self.poledata: Optional[PoleDATAManager] = poledata  # ✅ PoleDATAManager.poledata 인스턴스를 가져옴
         self.params = params  # ✅ DataLoader.params 인스턴스를 가져옴
 
         # ✅ 첫 번째 요소는 design_params (딕셔너리)
-        self.design_params = self.params[0]  # unpack 1
-        # ✅ 딕셔너리를 활용하여 안전하게 언패킹
-        self.designspeed = self.design_params.get("designspeed", 250)
-        self.linecount = self.design_params.get("linecount", 1)
-        self.lineoffset = self.design_params.get("lineoffset", 0.0)
-        self.poledirection = self.design_params.get("poledirection", -1)
-        self.mode = self.design_params.get("mode", 0)
+        self.design_params: dict[str, int | float] = self.params[0]
+        self.designspeed: int = self.design_params.get("designspeed", 250)
+        self.linecount: int = self.design_params.get("linecount", 1)
+        self.lineoffset: float = self.design_params.get("lineoffset", 0.0)
+        self.poledirection: int = self.design_params.get("poledirection", -1)
+        self.mode: int = self.design_params.get("mode", 0)
 
         # ✅ 두 번째 요소는 list_params (리스트)
-        self.list_params = self.params[1]
-        if len(self.list_params) >= 4:
-            self.curve_list = self.list_params[0]
-            self.pitch_list = self.list_params[1]
-            self.coord_list = self.list_params[2]
-            self.struct_list = self.list_params[3]
-            self.end_km = self.list_params[4]
+        self.list_params: list = self.params[1]
+        self._unpack_list_params()
 
+    def _unpack_list_params(self):
+        if len(self.list_params) >= 5:
+            self.curve_list: list[tuple[float, float, float]] = self.list_params[0]
+            self.pitch_list: list[tuple[float, float]] = self.list_params[1]
+            self.coord_list: list[tuple[float, float, float]] = self.list_params[2]
+            self.struct_list: dict[str, list[tuple[int, int]]] = self.list_params[3]
+            self.end_km: int = self.list_params[4]
         else:
-            logger.error("list_params의 길이가 4보다 작음")
+            logger.error("list_params의 길이가 5보다 작음")
             self.curve_list = []
             self.pitch_list = []
             self.coord_list = []
-            self.struct_list = []
-            self.end_km = 600.00  # 예외발생시 600
+            self.struct_list = {}
+            self.end_km = 600  # 예외 발생 시 기본값
 
 
 class PolePositionManager(BaseManager):
-    def __init__(self, params):
+    """전주 생성기능을 관리하는 클래스
 
+    Attributes:
+        pole_positions (list): 전주 위치 데이터
+        airjoint_list (list): 에어조인트 위치 데이터
+        post_number_lst (list): 전주번호 데이터
+        posttype_list (list): 전주타입 리스트
+    """
+
+    def __init__(self, params):
         super().__init__(params)
-        self.pole_positions = []
-        self.airjoint_list = []
-        self.post_number_lst = []
-        self.posttype_list = []
-        self.total_data_list = []
+        self.pole_positions: list[int] = []
+        self.airjoint_list: list[tuple[int, str]] = []
+        self.post_number_lst: list[str] = []
+        self.posttype_list: list[tuple[int, str]] = []
 
     def run(self):
         self.generate_positions()
         self.create_pole()
 
     def generate_positions(self):
+        """
+        모드에 따라 pole_positions을 생성하는 메소드
+        """
         if self.mode == 1:  # 새 노선용
             self.pole_positions = self.distribute_pole_spacing_flexible(0, self.end_km, spans=(45, 50, 55, 60))
             self.airjoint_list = self.define_airjoint_section(self.pole_positions)
             self.post_number_lst = self.generate_postnumbers(self.pole_positions)
         else:  # mode 0  기존 노선용
             # Load from file
-            messagebox.showinfo('파일 선택', '사용자 정의 전주파일을 선택해주세요')
-
-            self.load_pole_positions_from_file()
-            logger.info('사용자 정의 전주파일이 입력되었습니다.')
+            raise NotImplementedError
 
     def get_pole_data(self):
-        logger.debug(f"📢 get_pole_data() 호출됨 - 반환 값: {self.poledata}")
         return self.poledata
 
     def create_pole(self):
         """전주 위치 데이터를 가공"""
 
         data = PoleDATAManager()  # 인스턴스 생성
-        try:
-            for i in range(len(self.pole_positions) - 1):
+        for i in range(len(self.pole_positions) - 1):
+            try:
                 pos = self.pole_positions[i]  # 전주 위치 station
                 next_pos = self.pole_positions[i + 1]  # 다음 전주 위치 station
 
-                data.poles[i].pos = pos
-
                 current_span = next_pos - pos  # 현재 전주 span
-                data.poles[i].span = current_span
                 # 현재 위치의 구조물 및 곡선 정보 가져오기
                 current_structure = isbridge_tunnel(pos, self.struct_list)
-                data.poles[i].current_structure = current_structure  # 현재 전주 위치의 구조물
                 current_curve, r, c = iscurve(pos, self.curve_list)  # 현재 전주 위치의 곡선
+                current_slope, pitch = isslope(pos, self.pitch_list)  # 현재 전주 위치의 구배
+                current_airjoint = check_isairjoint(pos, self.airjoint_list)  # 현재 전주 위치의 AJ
+                post_number = find_post_number(self.post_number_lst, pos)  # 현재 전주넘버
+
+                # final
+                data.poles[i].pos = pos
+                data.poles[i].span = current_span
+                data.poles[i].current_structure = current_structure  # 현재 전주 위치의 구조물
                 data.poles[i].current_curve = current_curve
                 data.poles[i].radius = r
                 data.poles[i].cant = c
-
-                current_slope, pitch = isslope(pos, self.pitch_list)  # 현재 전주 위치의 구배
                 data.poles[i].pitch = pitch
-
-                current_airjoint = check_isairjoint(pos, self.airjoint_list)  # 현재 전주 위치의 AJ
                 data.poles[i].current_airjoint = current_airjoint
-
-                post_number = find_post_number(self.post_number_lst, pos)  # 현재 전주넘버
                 data.poles[i].post_number = post_number
 
-                # final
                 block = PoleDATA()  # 폴 블록 생성
                 data.poles.append(block)
+            except Exception as ex:
+                error_message = (
+                    f"예외 발생!\n"
+                    f"인덱스: {i}\n"
+                    f"위치: {pos}\n"
+                    f"예외 종류: {type(ex).__name__}\n"
+                    f"예외 메시지: {ex}\n"
+                    f"전체 트레이스백:\n{traceback.format_exc()}"
+                )
+                logger.error(error_message)
+                continue
 
+        if len(data.poles) > 0:
             # 속성에 추가
             self.poledata = data
-            logger.debug(f"✅ self.poledata가 정상적으로 생성되었습니다. 전주 개수: {len(self.poledata.poles)}")
-        except Exception as ex:
-            # Ensure current_structure is defined before the exception block
-            loggerdata = {
-                'i': i if 'i' in locals() else None,  # Check if i is defined
-                'pos': pos if 'pos' in locals() else None,
-                'current_structure': current_structure if 'current_structure' in locals() else None,
-                'error': str(ex),
-                'timestamp': datetime.now().isoformat()
-            }
-            save_exception_to_csv(loggerdata)
+            logger.debug(f"poledata가 정상적으로 생성되었습니다. 전주 개수: {len(self.poledata.poles)}")
+        else:
             self.poledata = None
-            logger.error("🚨 self.poledata가 None입니다! 데이터 생성에 실패했습니다.")
+            logger.error("poledata가 None입니다! 데이터 생성에 실패했습니다.")
 
     @staticmethod
-    def generate_postnumbers(lst):
+    def generate_postnumbers(lst: list[int]) -> list[tuple[int, str]]:
         postnumbers = []
         prev_km = -1
         count = 0
@@ -170,49 +177,37 @@ class PolePositionManager(BaseManager):
         df_curve = pd.read_csv(txt_filepath, sep=",", header=0, names=['측점', '전주번호', '타입', '에어조인트'])
 
         # 곡선 구간 정보 저장
-        self.total_data_list = df_curve.to_records(index=False).tolist()
         self.pole_positions = df_curve['측점'].tolist()
         self.post_number_lst = list(zip(df_curve['측점'], df_curve['전주번호']))
         self.posttype_list = list(zip(df_curve['측점'], df_curve['타입']))
         self.airjoint_list = [(row['측점'], row['에어조인트']) for _, row in df_curve.iterrows() if row['에어조인트'] != '일반개소']
 
     # GET 메소드 추가
-    def get_all_pole_data(self):
+    def get_all_pole_data(self) -> dict[str, list]:
         """전주 관련 모든 데이터를 반환"""
         return {
             "pole_positions": self.pole_positions,
             "airjoint_list": self.airjoint_list,
             "post_number_lst": self.post_number_lst,
             "posttype_list": self.posttype_list,
-            "total_data_list": self.total_data_list,
         }
 
-    def get_pole_positions(self):
-        return self.pole_positions
-
-    def get_airjoint_list(self):
-        return self.airjoint_list
-
-    def get_post_number_lst(self):
-        return self.post_number_lst
-
-    def get_post_type_list(self):
-        return self.posttype_list
-
-    def get_total_data_list(self):
-        return self.total_data_list
-
     @staticmethod
-    def distribute_pole_spacing_flexible(start_km, end_km, spans=()):
+    def distribute_pole_spacing_flexible(
+            start_km: int, end_km: int, spans: tuple[int, ...] = (45, 50, 55, 60)
+    ) -> list[int]:
         """
         45, 50, 55, 60m 범위에서 전주 간격을 균형 있게 배분하여 전체 구간을 채우는 함수
         마지막 전주는 종점보다 약간 앞에 위치할 수도 있음.
 
         :param start_km: 시작점 (km 단위)
         :param end_km: 끝점 (km 단위)
-        :param spans: 사용 가능한 전주 간격 리스트 (기본값: 45, 50, 55, 60)
+        :param spans: 사용 가능한 전주 간격 튜플 (기본값: 45, 50, 55, 60)
         :return: 전주 간격 리스트, 전주 위치 리스트
         """
+        if spans is None:
+            spans = (45, 50, 55, 60)
+
         start_m = int(start_km * 1000)  # km → m 변환
         end_m = int(end_km * 1000)
 
@@ -240,21 +235,47 @@ class PolePositionManager(BaseManager):
         return positions
 
     @staticmethod
-    def define_airjoint_section(positions):
-        airjoint_list = []  # 결과 리스트
-        airjoint_span = 1600  # 에어조인트 설치 간격(m)
+    def define_airjoint_section(positions: list[int]) -> list[tuple[int, str]]:
+        """
+        에어조인트(AirJoint) 위치를 정의하는 정적 메서드.
 
-        def is_near_multiple_of_number(number, tolerance=100):
-            """주어진 수가 1200의 배수에 근사하는지 판별하는 함수"""
+        주어진 전주 위치 목록(positions) 중에서 특정 간격(airjoint_span = 1600m)을 기준으로,
+        조건을 만족하는 지점부터 최대 5개의 전주 위치에 에어조인트 태그를 할당하여 리스트로 반환한다.
+
+        조건:
+            - 현재 위치가 airjoint_span의 배수(±100m 허용 오차)와 가까운 경우에만 에어조인트 설정.
+
+        에어조인트 태그 순서:
+            - START, POINT_2, MIDDLE, POINT_4, END
+
+        Args:
+            positions (list[int]): 전주 위치(정수값, m단위) 리스트
+
+        Returns:
+            list[tuple[int, str]]: (위치, 에어조인트 태그) 쌍의 리스트
+        """
+        airjoint_list: list[tuple[int, str]] = []
+        airjoint_span: int = 1600  # 에어조인트 설치 간격(m)
+
+        def is_near_multiple_of_number(number: int, tolerance: int = 100) -> bool:
+            """
+            숫자가 주어진 간격(airjoint_span)의 배수에 근접한지 판단하는 내부 함수.
+
+            Args:
+                number (int): 판별할 숫자
+                tolerance (int, optional): 허용 오차. 기본값은 100.
+
+            Returns:
+                bool: 배수에 근접하면 True, 아니면 False
+            """
             remainder = number % airjoint_span
             return number > airjoint_span and (remainder <= tolerance or remainder >= (airjoint_span - tolerance))
 
-        i = 0  # 인덱스 변수
-        while i < len(positions) - 1:  # 마지막 전주는 제외
-            pos = positions[i]  # 현재 전주 위치
-
-            if is_near_multiple_of_number(pos):  # 조건 충족 시
-                next_values = positions[i + 1:min(i + 6, len(positions))]  # 다음 5개 값 가져오기
+        i = 0
+        while i < len(positions) - 1:
+            pos = positions[i]
+            if is_near_multiple_of_number(pos):
+                next_values = positions[i + 1:min(i + 6, len(positions))]
                 tags = [
                     AirJoint.START.value,
                     AirJoint.POINT_2.value,
@@ -262,76 +283,124 @@ class PolePositionManager(BaseManager):
                     AirJoint.POINT_4.value,
                     AirJoint.END.value
                 ]
-
-                # (전주 위치, 태그) 쌍을 리스트에 추가 (최대 5개까지만)
                 airjoint_list.extend(list(zip(next_values, tags[:len(next_values)])))
-
-                # 다음 5개의 값을 가져왔으므로 인덱스를 건너뛰기
-                i += 5
+                i += 5  # 다음 다섯 개를 건너뜀
             else:
-                i += 1  # 조건이 맞지 않으면 한 칸씩 이동
+                i += 1
 
         return airjoint_list
 
 
 class PoleDATAManager:  # 전체 총괄
+    """
+    전주전체 총괄 클래스
+
+    Attributes:
+        poles (list): 개별 pole 데어터를 저장할 리스트
+    """
+
     def __init__(self):
-        self.poles = []  # 개별 pole 데어터를 저장할 리스트
+        self.poles = []
         pole = PoleDATA()
         self.poles.append(pole)
 
 
 class PoleDATA:  # 기둥 브래킷 금구류 포함 데이터
+    """
+        전주 설비 전체를 나타내는 데이터 구조
+
+        Attributes:
+            mast (MastDATA): 기둥 요소
+            Brackets (list[BracketElement]): 브래킷 목록
+            feeder (FeederDATA): 급전선 설비
+            pos (float): 전주 위치 (station)
+            post_number (str): 전주 번호
+            current_curve (str): 곡선 구간 여부(직선/곡선)
+            radius (float): 곡선 반경
+            cant (float): 캔트
+            current_structure (str): 구조물 상태 (토공/교량/터널)
+            pitch (float): 구배
+            current_airjoint (str): 에어조인트 여부(일반/에어조인트)
+            gauge (float): 궤간
+            span (float): 전주 간 거리
+            coord (Vector3): 전주의 3D 좌표
+            ispreader (bool): 평행틀 유무
+            direction (str): 방향 (R/L)
+            vector (float): 벡터 각도 2D
+    """
+
     def __init__(self):
-        self.mast = MastDATA()  # 기둥 요소
-        self.Brackets = []  # 브래킷을 담을 리스트
+        self.mast: MastDATA = MastDATA()  # 기둥 요소
+        self.Brackets: list[BracketElement] = []  # 브래킷 리스트
         bracketdata = BracketElement()  # 브래킷 인스턴스 생성
-        self.Brackets.append(bracketdata)  # 리스트에 인스턴스 추가
-        self.feeder = FeederDATA()  # 급전선 설비
-        self.pos = 0.0  # station
-        self.post_number = ''
-        self.current_curve = ''
-        self.radius = 0.0
-        self.cant = 0.0
-        self.current_structure = ''
-        self.pitch = 0.0
-        self.current_airjoint = ''
-        self.gauge = 0.0
-        self.span = 0.0
+        self.Brackets.append(bracketdata)
 
-        self.coord = Vector3(0, 0, 0)
-        self.ispreader = False
-        self.direction = ''  # R,L
-        self.vector = 0.0  # 벡터 각도
+        self.feeder: FeederDATA = FeederDATA()  # 급전선 설비
+        self.pos: float = 0.0  # 전주 위치 (station)
+        self.post_number: str = ''  # 전주 번호
+        self.current_curve: str = ''  # 곡선 여부
+        self.radius: float = 0.0  # 곡선 반경
+        self.cant: float = 0.0  # 캔트
+        self.current_structure: str = ''  # 구조물 (교량, 터널 등)
+        self.pitch: float = 0.0  # 구배
+        self.current_airjoint: str = ''  # 에어조인트 위치
+        self.gauge: float = 0.0  # 궤간
+        self.span: float = 0.0  # 전주 간 거리
+
+        self.coord: Vector3 = Vector3(0, 0, 0)  # 3D 좌표
+        self.ispreader: bool = False  # 스프레더 여부
+        self.direction: str = ''  # 방향 (R, L)
+        self.vector: float = 0.0  # 벡터 각도
 
 
-class BracketElement:
+class Element:
+    """
+    브래킷,전주 요소 상위클래스
+    Attributes:
+        name(str):  이름
+        index(int): 오브젝트 인덱스
+        element_type(str) :  타입
+        positionx(float): freeobj x offset
+        positiony(float): freeobj y offset
+    """
+
     def __init__(self):
-        self.name = ''
-        self.index = 0
-        self.type = ''
-        self.positionx = 0.0
-        self.positiony = 0.0
+        self.name: str = ''
+        self.index: int = 0
+        self.element_type: str = ''
+        self.positionx: float = 0.0
+        self.positiony: float = 0.0
 
 
-class MastDATA:
+class BracketElement(Element):
+    pass
+
+
+class MastDATA(Element):
+    """
+     전주 요소
+     Attributes:
+         height(float):  전주높이(m)
+         width(float): 전주폭(mm)
+         fundermentalindex(int):  전주기초 오브젝트 인덱스
+         fundermentaltype(str): 전주기초 타입
+         fundermentaldimension(float): 전주기초치수
+     """
+
     def __init__(self):
-        self.name = ''
-        self.index = 0
-        self.type = ''
-        self.height = 0.0
-        self.width = 0.0
-        self.fundermentalindex = 0
-        self.fundermentaltype = ''
-        self.fundermentaldimension = 0.0
+        super().__init__()
+        self.height: float = 0.0
+        self.width: float = 0.0
+        self.fundermentalindex: int = 0
+        self.fundermentaltype: str = ''
+        self.fundermentaldimension: float = 0.0
 
 
-class FeederDATA:
+class FeederDATA(Element):
+    """급전선 설비 데이터를 설정하는 클래스"""
+
     def __init__(self):
-        self.name = ''
-        self.index = 0
-        self.x = 0.0
-        self.y = 0.0
+        super().__init__()
 
 
 class MastManager(BaseManager):
@@ -347,112 +416,6 @@ class MastManager(BaseManager):
             mast_index, mast_name = get_mast_type(self.designspeed, current_structure)
             data.poles[i].mast.name = mast_name
             data.poles[i].mast.index = mast_index
-
-
-class BracketManager(BaseManager):
-    def __init__(self, params, poledata):
-        super().__init__(params, poledata)
-        self.dictionaryofbracket = Dictionaryofbracket()  # 브래킷 데이터 클래스 가져오기
-
-    def run(self):
-        self.create_bracket()
-
-    def get_brackettype(self, speed, installtype, gauge, name):
-        """브래킷 정보를 반환"""
-        return self.dictionaryofbracket.get_bracket_number(speed, installtype, gauge, name)
-
-    def create_bracket(self):
-        data = self.poledata
-
-        for i in range(len(data.poles) - 1):
-            if self.mode == 0:  # 기존 노선용
-                current_type, bracket_name, install_type, gauge = self.create_bracket_with_old_alignment(i, data)
-            else:
-                current_type, bracket_name, install_type, gauge = self.create_bracket_with_new_alignment(i, data)
-
-            bracket_index = self.get_brackettype(self.designspeed, install_type, gauge, bracket_name)
-            if install_type == 'Tn':
-                bracket_full_name = f'CaKo{self.designspeed}-{install_type}-{current_type}'
-            else:
-                bracket_full_name = f'CaKo{self.designspeed}-{install_type}{gauge}-{current_type}'
-
-            #  속성지정
-            data.poles[i].Brackets[0].type = current_type
-            data.poles[i].Brackets[0].name = bracket_full_name
-            data.poles[i].Brackets[0].index = bracket_index
-            data.poles[i].direction = 'L' if self.poledirection == -1 else 'R'
-
-            if self.poledirection == -1 and not install_type == 'Tn':
-                gauge *= -1
-
-            data.poles[i].gauge = gauge
-
-    def check_poledirection(self):
-        pass
-
-    def create_bracket_with_new_alignment(self, i, data):
-        is_i_type = self.check_current_is_i_type(i)
-        current_type, bracket_name = self.get_current_type_and_bracket_name(is_i_type)
-        # 전주 방향에 따라 타입 변경
-        current_type, bracket_name = self.swap_type(current_type, bracket_name)
-        current_structure = data.poles[i].current_structure  # 찾을수 없는 속성
-        install_type, gauge = self.get_installtype_and_gauge(current_structure)
-        return current_type, bracket_name, install_type, gauge
-
-    def create_bracket_with_old_alignment(self, i, data):
-        # todo 미완성 new_alignment복제
-        is_i_type = self.check_current_is_i_type(i)
-        current_type, bracket_name = self.get_current_type_and_bracket_name(is_i_type)
-        # 전주 방향에 따라 타입 변경
-        current_type, bracket_name = self.swap_type(current_type, bracket_name)
-
-        current_structure = data.poles[i].current_structure  # 찾을수 없는 속성
-        install_type, gauge = self.get_installtype_and_gauge(current_structure)
-        return current_type, bracket_name, install_type, gauge
-
-    def check_current_is_i_type(self, i):
-        #  모드에 따라 type여부 체크
-        if self.mode == 0:
-            #  todo 아직 미완성
-            is_i_type = (i % 2 == 1)  # bool
-        else:
-            is_i_type = (i % 2 == 1)  # bool
-        return is_i_type
-
-    @staticmethod
-    def get_installtype_and_gauge(current_structure):
-        if current_structure == '토공':
-            install_type = 'OpG'
-            gauge = 3.0
-        elif current_structure == '교량':
-            install_type = 'OpG'
-            gauge = 3.5
-        elif current_structure == '터널':
-            install_type = 'Tn'
-            gauge = 2.1
-        else:
-            install_type = ''
-            gauge = 0.0
-
-        return install_type, gauge
-
-    @staticmethod
-    def get_current_type_and_bracket_name(is_i_type):
-        if is_i_type:
-            current_type = 'I'
-            bracket_name = 'inner'
-        else:
-            current_type = 'O'
-            bracket_name = 'outer'
-
-        return current_type, bracket_name
-
-    def swap_type(self, current_type, bracket_name):
-        """전주 방향(poledirection)이 반대일 경우 브래킷 타입 전환"""
-        if self.poledirection == 1:
-            current_type = 'O' if current_type == 'I' else 'I'
-            bracket_name = 'outer' if bracket_name == 'inner' else 'inner'
-        return current_type, bracket_name
 
 
 class FeederManager(BaseManager):

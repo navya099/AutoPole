@@ -12,9 +12,9 @@ class BaseFileHandler:
     """파일 처리를 위한 기본 클래스 (공통 기능 포함)"""
 
     def __init__(self):
-        self.filepath = None
-        self.filename = None
-        self.file_data = None
+        self.filepath: str = ''
+        self.filename: str = ''
+        self.file_data: str = ''
 
     def select_file(self, title: str, file_types: list[tuple[str, str]]):
         """공통 파일 선택 메서드"""
@@ -147,7 +147,7 @@ class TxTFileHandler(BaseFileHandler):
     def __init__(self):
         """TxTFileHandler 객체를 초기화합니다."""
         super().__init__()
-        self.file_data = None  # 텍스트 리스트
+        self.file_data: list[str] = []  # 텍스트 리스트
 
         logger.debug("TxTFileHandler 객체가 초기화되었습니다.")
 
@@ -169,11 +169,11 @@ class TxTFileHandler(BaseFileHandler):
             logger.error(f"파일 처리 중 오류 발생: {e}", exc_info=True)
             return []
 
-    def process_info(self, columns=None, delimiter=',', include_cant=False):
+    def process_info(self, columns: list[str] = None, delimiter: str = ',', mode: str = 'curve') -> list[tuple[float,...]]:
         """txt 파일을 읽고 선택적 열(column) 데이터를 반환하는 함수"""
         if columns is None:
             # 기본적인 columns 이름 설정
-            if include_cant:
+            if mode == 'curve':
                 columns = ['sta', 'radius', 'cant']
             else:
                 columns = ['sta', 'radius']
@@ -239,9 +239,14 @@ class TxTFileHandler(BaseFileHandler):
 
 
 class PolylineHandler(TxTFileHandler):
+    """
+    폴리라인좌표 생성 클래스
+    Attributes:
+        points(list[tuple[float, float, float]]): 좌표리스트(x,y,z)
+    """
     def __init__(self):
         super().__init__()
-        self.points = None
+        self.points: list[tuple[float, float, float]] = []
 
     def load_polyline(self):
         super().select_file("bve좌표 파일 선택", [("txt files", "*.txt"), ("All files", "*.*")])
@@ -307,15 +312,14 @@ class ExcelFileHandler(BaseFileHandler):
             logger.error(f"알 수 없는 오류 발생: {e}", exc_info=True)
             return None
 
-    def process_structure_data(self):
+    def process_structure_data(self) -> dict[str, list[tuple[int, int]]]:
         """교량과 터널 구간 정보를 처리하는 메소드"""
         self.read_excel()
+        structure_dic = {'bridge': [], 'tunnel': []}
 
         if self.excel_BRIDGE_Data is None or self.excel_TUNNEL_Data is None:
             logger.warning("엑셀 데이터가 로드되지 않았습니다.")
-            return None
-
-        structure_dic = {'bridge': [], 'tunnel': []}
+            return structure_dic
 
         # 첫 번째 행을 열 제목으로 설정
         self.excel_BRIDGE_Data.columns = ['br_NAME', 'br_START_STA', 'br_END_STA', 'br_LENGTH']
@@ -332,10 +336,8 @@ class ExcelFileHandler(BaseFileHandler):
             logger.info("교량과 터널 정보가 성공적으로 처리되었습니다.")
         except Exception as e:
             logger.error(f"구조 데이터 처리 중 오류 발생: {e}", exc_info=True)
-            return None
+            return {}
 
-        print("==== TUNNEL DATA DEBUG ====")
-        print(self.excel_TUNNEL_Data.head(5))  # 상위 5개만 확인
         return structure_dic
 
 

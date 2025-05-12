@@ -168,7 +168,7 @@ class TaskWizard(tk.Toplevel):
         """파일 선택 대화상자"""
         file_path = filedialog.askopenfilename()
         if file_path:
-            logger.info(f"✅ 파일 선택됨: {file_path}")  # 디버깅용 출력
+            logger.info(f"파일 선택됨: {file_path}")  # 디버깅용 출력
             self.file_paths[i].set(file_path)
 
     def select_mode(self):
@@ -265,7 +265,7 @@ class TaskWizard(tk.Toplevel):
 
     def run_main_process(self, q):
         try:
-            design_params = {
+            design_params: dict[str, int | float] = {
                 "designspeed": int(self.inputs[0].get()),
                 "linecount": int(self.inputs[1].get()),
                 "lineoffset": float(self.inputs[2].get()),
@@ -273,7 +273,7 @@ class TaskWizard(tk.Toplevel):
                 "mode": 0 if self.mode.get() == '기존 노선용' else 1
             }
 
-            file_paths = {
+            file_paths: dict[str, str] = {
                 "curve_path": self.file_paths[0].get(),
                 "pitch_path": self.file_paths[1].get(),
                 "coord_path": self.file_paths[2].get(),

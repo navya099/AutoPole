@@ -5,13 +5,7 @@ import sys
 from fileio.jsonloader import ConfigManager
 from types import MappingProxyType
 
-# 현재 main.py 기준으로 상위 폴더에서 bveparser 경로 추가
-base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-bve_path = os.path.join(base_path, 'bveparser')
-
-if bve_path not in sys.path:
-    sys.path.insert(0, bve_path)
-from BVEParser.OpenBveApi.Math.Vectors.Vector3 import Vector3
+from utils.Vector3 import Vector3
 
 config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'span_data.json')
 
