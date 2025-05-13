@@ -1,6 +1,8 @@
+import traceback
 from dataclasses import dataclass
 from core.pole import BaseManager, PoleDATAManager
 from utils.logger import logger
+from utils.util import Direction
 
 
 class BracketManager(BaseManager):
@@ -14,6 +16,7 @@ class BracketManager(BaseManager):
     def __init__(self, params, poledata):
         super().__init__(params, poledata)
         self.dictionaryofbracket = Dictionaryofbracket()  # 브래킷 데이터 클래스 가져오기
+        logger.debug(f'BracketManager 초기화 완료')
 
     def run(self):
         self.create_bracket()
@@ -23,32 +26,45 @@ class BracketManager(BaseManager):
         return self.dictionaryofbracket.get_bracket_number(speed, installtype, gauge, bracket_type)
 
     def create_bracket(self):
-        data = self.poledata
+        data:  PoleDATAManager = self.poledata
 
         for i in range(len(data.poles) - 1):
-            if self.mode == 0:  # 기존 노선용
-                current_type, bracket_type, install_type, gauge = self.create_bracket_with_old_alignment(i, data)
-            else:
-                current_type, bracket_type, install_type, gauge = self.create_bracket_with_new_alignment(i, data)
+            try:
+                if self.mode == 0:  # 기존 노선용
+                    current_type, bracket_type, install_type, gauge = self.create_bracket_with_old_alignment(i, data)
+                else:
+                    current_type, bracket_type, install_type, gauge = self.create_bracket_with_new_alignment(i, data)
 
-            bracket_index = self.get_brackettype(self.designspeed, install_type, gauge, bracket_type)
-            if install_type == 'Tn':
-                bracket_full_name = f'CaKo{self.designspeed}-{install_type}-{current_type}'
-            else:
-                bracket_full_name = f'CaKo{self.designspeed}-{install_type}{gauge}-{current_type}'
+                bracket_index = self.get_brackettype(self.designspeed, install_type, gauge, bracket_type)
+                if install_type == 'Tn':
+                    bracket_full_name = f'CaKo{self.designspeed}-{install_type}-{current_type}'
+                else:
+                    bracket_full_name = f'CaKo{self.designspeed}-{install_type}{gauge}-{current_type}'
 
-            #  속성지정
-            data.poles[i].Brackets[0].element_type = current_type
-            data.poles[i].Brackets[0].name = bracket_full_name
-            data.poles[i].Brackets[0].index = bracket_index
-            data.poles[i].direction = 'L' if self.poledirection == -1 else 'R'
+                if data.poles[i].direction == Direction.LEFT and install_type != 'Tn':
+                    bracket_direction = Direction.LEFT
+                else:
+                    bracket_direction = Direction.RIGHT
 
-            if self.poledirection == -1 and not install_type == 'Tn':
-                gauge *= -1
+                #  속성지정
+                data.poles[i].Brackets[0].element_type = current_type
+                data.poles[i].Brackets[0].name = bracket_full_name
+                data.poles[i].Brackets[0].index = bracket_index
 
-            data.poles[i].gauge = gauge
+                data.poles[i].gauge = gauge
+                data.poles[i].Brackets[0].direction = bracket_direction  # 개별 브래킷 방향
 
-        logger.info(f'브래킷 생성이 ㅇ완료됐습니다.')
+            except Exception as ex:
+                error_message = (
+                    f"예외 발생 in create_bracket!\n"
+                    f"인덱스: {i}\n"
+                    f"예외 종류: {type(ex).__name__}\n"
+                    f"예외 메시지: {ex}\n"
+                    f"전체 트레이스백:\n{traceback.format_exc()}"
+                )
+                logger.error(error_message)
+                continue
+        logger.info(f'브래킷 생성이 완료됐습니다.')
 
     def check_poledirection(self):
         pass

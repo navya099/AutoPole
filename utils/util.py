@@ -1,7 +1,9 @@
-import re
 import math
-from .logger import logger
-from typing import Literal
+from enum import Enum
+
+from utils.logger import logger
+from typing import Literal, List, Tuple
+from utils.Vector3 import Vector3
 
 
 def validate_structure_list(structure_list: dict) -> bool:
@@ -50,6 +52,7 @@ def isbridge_tunnel(sta: float, structure_list: dict) -> Literal['교량', '터�
                 return '터널'
 
     except Exception as ex:
+
         logger.error(
             f"🚨 structure_list validation failed: {type(ex).__name__} - {ex} | sta={sta}")
 
@@ -96,7 +99,7 @@ def isslope(cur_sta, curve_list):
     return '수평', 0  # 목록에 없으면 기본적으로 직선 처리
 
 
-def find_last_block(data: list[str]) -> int:
+def find_last_block(data: str) -> int:
     """
     주어진 문자열 리스트의 마지막 요소에서 블록 값을 추출하여 반환합니다.
 
@@ -155,71 +158,101 @@ def get_mast_type(speed: int, current_structure: str) -> tuple[int, str]:
     return mast_index, mast_name
 
 
-def get_elevation_pos(pos, polyline_with_sta):
-    new_z = None
-
-    for i in range(len(polyline_with_sta) - 1):
-        sta1, x1, y1, z1 = polyline_with_sta[i]  # 현재값
-        sta2, x2, y2, z2 = polyline_with_sta[i + 1]  # 다음값
-        length = sta2 - sta1
-        length_new = pos - sta1
-
-        if sta1 <= pos < sta2:
-            new_z = calculate_height_at_new_distance(z1, z2, length, length_new)
-            return new_z
-
-    return new_z
-
-
-def calculate_height_at_new_distance(h1, h2, length, length_new):
-    """주어진 거리 L에서의 높이 변화율을 기반으로 새로운 거리 L_new에서의 높이를 계산"""
-    h3 = h1 + ((h2 - h1) / length) * length_new
-    return h3
-
-
-def return_pos_coord(polyline_with_sta, pos):
-    point_a, _, vector_a = interpolate_coordinates(polyline_with_sta, pos)
-    return point_a, vector_a
-
-
-def interpolate_coordinates(
-        polyline: list[tuple[int, float, float, float]], target_sta: int) -> \
-        tuple[tuple[float, float, float], tuple[float, float, float], float]:
+class CoordinateInterpolator:
+    """폴리선 보간 기능을 수행하는 유틸클래스
+        Attributes:
+            polyline (List[Tuple[int, float, float, float]]): 측점 정보가 포함된 폴리선 리스트튜플
+            interpolate_coord (Vector3): 보간된 점의 좌표 Vector3
+            origin_coord (Vector3): 보간된 점의 시작점 좌표 Vector3
+            vector (float): 시작점의 방향벡터(각도)
     """
-    주어진 폴리선 데이터에서 특정 sta 값에 대한 좌표를 선형 보간하여 반환.
 
-    :param polyline: [(sta, x, y, z), ...] 형식의 리스트
-    :param target_sta: 찾고자 하는 sta 값
-    :return: (x, y, z) 좌표 튜플
-    """
-    # 정렬된 리스트를 가정하고, 적절한 두 점을 찾아 선형 보간 수행
-    for i in range(len(polyline) - 1):
-        sta1, x1, y1, z1 = polyline[i]
-        sta2, x2, y2, z2 = polyline[i + 1]
-        v1 = calculate_bearing(x1, y1, x2, y2)
-        # target_sta가 두 점 사이에 있는 경우 보간 수행
-        if sta1 <= target_sta < sta2:
-            t = abs(target_sta - sta1)
-            x, y = calculate_destination_coordinates(x1, y1, v1, t)
-            z = calculate_height(z1, z2, sta2 - sta1, t)
-            interpolate_coord = (x, y, z)
-            origin_coord = (x1, y1, z1)
-            return interpolate_coord, origin_coord, v1
+    def __init__(self, polyline: List[Tuple[int, float, float, float]]):
+        self.polyline = polyline
+        self.interpolate_coord: Vector3 = Vector3.Zero()
+        self.origin_coord: Vector3 = Vector3.Zero()
+        self.vector: float = 0.0
 
+    def cal_interpolate(self, target_sta: int):
+        """
+        폴리선을 순회하여 보간점을 계산합니다.
+        """
+        for i in range(len(self.polyline) - 1):
+            sta1, x1, y1, z1 = self.polyline[i]
+            sta2, x2, y2, z2 = self.polyline[i + 1]
+            if sta1 <= target_sta < sta2:
+                t = target_sta - sta1
+                self.vector = calculate_bearing(x1, y1, x2, y2)
+                x, y = calculate_destination_coordinates(x1, y1, self.vector, t)
+                z = self.cal_interpolate_height(z1, z2, sta2 - sta1, t)
+                self.interpolate_coord = Vector3(x, y, z)
+                self.origin_coord = Vector3(x1, y1, z1)
+                return
 
-def calculate_height(z1, z2, length, horizontal_distance):
-    # 높이 차이
-    delta_z = z2 - z1
+        raise ValueError(f"STA {target_sta} is out of polyline range.")
 
-    # 경사면 전체 길이에 대한 경사율
-    slope = delta_z / length
+    def get_elevation_pos(self) -> float:
+        """
+        보간된 높이(float)를 반환합니다.
+        """
+        return self.interpolate_coord.z
 
-    # 수평 거리만큼 진행했을 때 높이 변화량
-    delta_z_x = slope * horizontal_distance
+    def get_origin_coord(self) -> Vector3:
+        """
+        보간점 사이의 시작 좌표(Vector3)를 반환합니다.
+        """
+        return self.origin_coord
 
-    # 최종 높이
-    z = z1 + delta_z_x
-    return z
+    @staticmethod
+    def cal_interpolate_height(start_z: float, end_z: float, total_length: float, distance: float) -> float:
+        """
+        두 점 사이의 높이를 선형 보간하여, 지정된 거리 지점의 높이를 반환합니다.
+        """
+        return start_z + ((end_z - start_z) / total_length) * distance
+
+    def get_pos_coord(self) -> Vector3:
+        """
+        보간점의 좌표(Vector3)를 반환합니다.
+        """
+        return self.interpolate_coord
+
+    def get_vector(self) -> float:
+        """
+        보간점 사이의 시작점 각도를 반환합니다.
+        """
+        return self.vector
+
+    def calculate_curve_angle(self, pos: int, next_pos: int, stagger1: float, stagger2: float) -> float:
+        """
+        전차선의 좌우 offset을 고려한 yaw 각도 계산 함수
+        :param pos: 시작 측점
+        :param next_pos: 끝 측점
+        :param stagger1: 시작점 좌우 offset
+        :param stagger2: 끝점 좌우 offset
+        :return: yaw angle (degrees)
+        """
+        final_anlge = 0.0  # 변수초기화
+
+        # 시작pos와 끝 pos의 좌표와 폴리선 벡터 반환
+        self.cal_interpolate(pos)
+        point_a = self.get_pos_coord()
+        vector_a = self.get_vector()
+
+        self.cal_interpolate(next_pos)
+        point_b = self.get_pos_coord()
+        vector_b = self.get_vector()
+
+        if point_a and point_b:
+            # offset 점 계산
+            offset_point_a = calculate_offset_point(vector_a, (point_a.x, point_a.y, point_a.z), stagger1)
+            offset_point_b = calculate_offset_point(vector_b, (point_b.x, point_b.y, point_b.z), stagger2)
+
+            # offset점끼리의 각도
+            a_b_angle = calculate_bearing(offset_point_a[0], offset_point_a[1], offset_point_b[0], offset_point_b[1])
+
+            # 최종 각도
+            final_anlge = vector_a - a_b_angle
+        return final_anlge
 
 
 def calculate_bearing(x1: float, y1: float, x2: float, y2: float) -> float:
@@ -288,37 +321,6 @@ def get_wire_span_data(designspeed, currentspan, current_structure):
     return idx_value, comment, feeder_idx, fpw_idx
 
 
-def calculate_curve_angle(
-        polyline_with_sta: list[tuple[int, float, float, float]],
-        pos: int, next_pos: int, stagger1: float, stagger2: float) -> float:
-    """
-    전차선의 좌우 offset을 고려한 yaw 각도 계산 함수
-    :param polyline_with_sta: 선형 좌표 리스트
-    :param pos: 시작 측점
-    :param next_pos: 끝 측점
-    :param stagger1: 시작점 좌우 offset
-    :param stagger2: 끝점 좌우 offset
-    :return: yaw angle (degrees)
-    """
-    final_anlge = 0.0  # 변수초기화
-
-    # 시작pos와 끝 pos의 좌표와 폴리선 벡터 반환
-    point_a, _, vector_a = interpolate_coordinates(polyline_with_sta, pos)
-    point_b, _, vector_b = interpolate_coordinates(polyline_with_sta, next_pos)
-
-    if point_a and point_b:
-        # offset 점 계산
-        offset_point_a = calculate_offset_point(vector_a, point_a, stagger1)
-        offset_point_b = calculate_offset_point(vector_b, point_b, stagger2)
-
-        # offset점끼리의 각도
-        a_b_angle = calculate_bearing(offset_point_a[0], offset_point_a[1], offset_point_b[0], offset_point_b[1])
-
-        # 최종 각도
-        final_anlge = vector_a - a_b_angle
-    return final_anlge
-
-
 # offset 좌표 반환
 def calculate_offset_point(vector: float, point_a: tuple[float, float, float], offset_distance: float) -> \
         tuple[float, float]:
@@ -343,3 +345,8 @@ def calculate_slope(h1: float, h2: float, gauge: float) -> float:
     """주어진 높이 차이와 수평 거리를 바탕으로 기울기(각도) 계산"""
     slope = (h2 - h1) / gauge  # 기울기 값 (비율)
     return math.degrees(math.atan(slope))  # 아크탄젠트 적용 후 degree 변환
+
+
+class Direction(Enum):
+    LEFT = -1
+    RIGHT = 1

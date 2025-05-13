@@ -47,6 +47,7 @@ class MainProcess:
         except Exception as ex:
             if progress_callback:
                 progress_callback(f"0|에러: {ex}")
+                logger.error(f'에러: {ex}')
 
     # 단계별 처리 함수
     def load_data(self):

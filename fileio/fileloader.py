@@ -14,8 +14,7 @@ class BaseFileHandler:
     def __init__(self):
         self.filepath: str = ''
         self.filename: str = ''
-        self.file_data: str = ''
-
+        self.file_data: list[str] = []
     def select_file(self, title: str, file_types: list[tuple[str, str]]):
         """공통 파일 선택 메서드"""
         logger.debug(f"{title} 파일 선택 창을 엽니다.")

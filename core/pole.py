@@ -78,6 +78,7 @@ class PolePositionManager(BaseManager):
         self.airjoint_list: list[tuple[int, str]] = []
         self.post_number_lst: list[str] = []
         self.posttype_list: list[tuple[int, str]] = []
+        logger.debug(f'PolePositionManager 초기화 완료')
 
     def run(self):
         self.generate_positions()
@@ -91,6 +92,9 @@ class PolePositionManager(BaseManager):
             self.pole_positions = self.distribute_pole_spacing_flexible(0, self.end_km, spans=(45, 50, 55, 60))
             self.airjoint_list = self.define_airjoint_section(self.pole_positions)
             self.post_number_lst = self.generate_postnumbers(self.pole_positions)
+            logger.info(f'전주 포지션 생성 완료\n pole_positions 갯수:{len(self.pole_positions)}\n,'
+                        f'airjoint_list 갯수:{len(self.airjoint_list)}\n,'
+                        f'post_number_lst 갯수:{len(self.post_number_lst)}')
         else:  # mode 0  기존 노선용
             # Load from file
             raise NotImplementedError
@@ -125,12 +129,13 @@ class PolePositionManager(BaseManager):
                 data.poles[i].pitch = pitch
                 data.poles[i].current_airjoint = current_airjoint
                 data.poles[i].post_number = post_number
+                data.poles[i].direction = Direction.LEFT if self.poledirection == -1 else Direction.RIGHT  # 전체 방향
 
                 block = PoleDATA()  # 폴 블록 생성
                 data.poles.append(block)
             except Exception as ex:
                 error_message = (
-                    f"예외 발생!\n"
+                    f"예외 발생 in create_pole!\n"
                     f"인덱스: {i}\n"
                     f"위치: {pos}\n"
                     f"예외 종류: {type(ex).__name__}\n"
@@ -349,20 +354,23 @@ class PoleDATA:
 
         self.coord: Vector3 = Vector3.Zero()  # 3D 좌표
         self.ispreader: bool = False  # 스프레더 여부
-        self.direction: str = ''  # 방향 (R, L)
+        self.direction: Direction = Direction.LEFT  # 방향 (R, L)
         self.vector: float = 0.0  # 벡터 각도
 
 
 class Element:
     """
-    브래킷,전주 요소 상위클래스
+    브래킷,전주 ,전선 요소 상위클래스
     Attributes:
         name(str):  이름
         index(int): 오브젝트 인덱스
         element_type(str) :  타입
         positionx(float): freeobj x offset
         positiony(float): freeobj y offset
-    """
+        yaw(float): freeobj yaw
+        pitch(float): freeobj pitch
+        direction(Direction):  방향(Direction)
+        """
 
     def __init__(self):
         self.name: str = ''
@@ -370,12 +378,17 @@ class Element:
         self.element_type: str = ''
         self.positionx: float = 0.0
         self.positiony: float = 0.0
+        self.yaw: float = 0.0  # 전선의 평면각도
+        self.pitch: float = 0.0  # 전선의 종단각도
+        self.roll: float = 0.0  # 전선의 roll각도
+        self.direction: Direction = Direction.LEFT
 
 
 class BracketElement(Element):
     """
     브래킷 요소 Element상속
     """
+
     def __init__(self):
         super().__init__()
 
@@ -409,6 +422,7 @@ class FeederDATA(Element):
 
 class MastManager(BaseManager):
     """전주(Mast) 데이터를 설정하는 클래스"""
+
     def __init__(self, params, poledata):
         super().__init__(params, poledata)
 
@@ -418,14 +432,26 @@ class MastManager(BaseManager):
     def create_mast(self):
         data = self.poledata
         for i in range(len(data.poles) - 1):
-            current_structure = data.poles[i].current_structure
-            mast_index, mast_name = get_mast_type(self.designspeed, current_structure)
-            data.poles[i].mast.name = mast_name
-            data.poles[i].mast.index = mast_index
+            try:
+                current_structure = data.poles[i].current_structure
+                mast_index, mast_name = get_mast_type(self.designspeed, current_structure)
+                data.poles[i].mast.name = mast_name
+                data.poles[i].mast.index = mast_index
+            except Exception as ex:
+                error_message = (
+                    f"예외 발생 in create_mast!\n"
+                    f"인덱스: {i}\n"
+                    f"예외 종류: {type(ex).__name__}\n"
+                    f"예외 메시지: {ex}\n"
+                    f"전체 트레이스백:\n{traceback.format_exc()}"
+                )
+                logger.error(error_message)
+                continue
 
 
 class FeederManager(BaseManager):
     """급전선 설비(전선x) 데이터를 설정하는 클래스"""
+
     def __init__(self, params, poledata):
         super().__init__(params, poledata)
 
