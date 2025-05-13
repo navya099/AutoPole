@@ -1,6 +1,8 @@
 import random
 import traceback
 from enum import Enum
+from lib2to3.pgen2.tokenize import Bracket
+
 import pandas as pd
 from fileio.fileloader import TxTFileHandler
 from utils.util import *
@@ -437,6 +439,8 @@ class MastManager(BaseManager):
                 mast_index, mast_name = get_mast_type(self.designspeed, current_structure)
                 data.poles[i].mast.name = mast_name
                 data.poles[i].mast.index = mast_index
+                data.poles[i].mast.direction = data.poles[i].Brackets[0].direction
+
             except Exception as ex:
                 error_message = (
                     f"예외 발생 in create_mast!\n"
@@ -480,3 +484,5 @@ class FeederManager(BaseManager):
             feederindex = feeder_map.get((current_structure, speed), 1234)
             data.poles[i].feeder.index = feederindex
             data.poles[i].feeder.name = '급전선 지지물'
+            data.poles[i].feeder.direction = data.poles[i].direction
+            data.poles[i].feeder.positionx = data.poles[i].gauge * data.poles[i].feeder.direction.value

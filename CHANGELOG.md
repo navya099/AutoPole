@@ -33,6 +33,26 @@
 
 ---
 
+
+## [1.0.3] - 2025-05-13
+### 🐞 Fixed`: 버그 수정
+- 구배 미반영 버그수정
+- 전주가 좌측일때 버그수정
+- 발견된 버그:
+- 인덱스: 1716
+위치: 89930
+예외 종류: TypeError
+예외 메시지: unsupported operand type(s) for *: 'NoneType' and 'float'
+전체 트레이스백:
+Traceback (most recent call last):
+  File "C:\Users\Administrator\Documents\파이썬\AutoPOLE\core\wire.py", line 60, in create_wires
+    self._set_contact_wire(
+  File "C:\Users\Administrator\Documents\파이썬\AutoPOLE\core\wire.py", line 107, in _set_contact_wire
+    next_offset = next_sign * 0.2
+                  ~~~~~~~~~~^~~~~
+TypeError: unsupported operand type(s) for *: 'NoneType' and 'float'
+
+---
 ## [예정 버전]
 
 ### [1.1.0] - (예정)

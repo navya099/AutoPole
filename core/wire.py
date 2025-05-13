@@ -50,7 +50,7 @@ class WirePositionManager(BaseManager):
 
                 span = data.poles[i].span  # 경간
                 gauge = data.poles[i].gauge  # 건식게이지
-                direction = data.poles[i].Brackets[0].direction  # 브래킷 방향
+                direction = data.poles[i].feeder.direction  # 브래킷 방향
                 current_structure = data.poles[i].current_structure  # 현재 구조물
                 next_structure = data.poles[i + 1].current_structure  # 다음 구조물
 
@@ -60,7 +60,7 @@ class WirePositionManager(BaseManager):
                         self._set_contact_wire(
                             wiredata, i, data, spandata,
                             pos, next_pos, pos_coord, next_pos_coord,
-                            vector_pos, span, current_structure
+                            vector_pos, span, current_structure, next_structure
                         )
                     else:
                         self._set_common_wire(
@@ -97,12 +97,12 @@ class WirePositionManager(BaseManager):
 
     def _set_contact_wire(self, wiredata, i, data, spandata,
                           pos, next_pos, pos_coord, next_pos_coord,
-                          vector_pos, span, current_structure):
+                          vector_pos, span, current_structure, next_structure):
         current_bracket_type = data.poles[i].Brackets[0].element_type
         next_bracket_type = data.poles[i + 1].Brackets[0].element_type
         contact_index = spandata.get_span_indices(self.designspeed, current_structure, 'contact', span)
-        sign = self.get_sign(self.poledirection, current_bracket_type)
-        next_sign = self.get_sign(self.poledirection, next_bracket_type)
+        sign = self.get_sign(self.poledirection, current_bracket_type, current_structure)
+        next_sign = self.get_sign(self.poledirection, next_bracket_type, next_structure)
         lateral_offset = sign * 0.2
         next_offset = next_sign * 0.2
         planangle = self.interpolatedata.calculate_curve_angle(pos, next_pos, lateral_offset, next_offset)
@@ -140,10 +140,19 @@ class WirePositionManager(BaseManager):
         wire.pitch = wires_angle.y
         wire.roll = wires_angle.z
     @staticmethod
-    def get_sign(poledirection: int, bracket_type: str):
-        is_inner = bracket_type == 'I'
-        return -1 if (poledirection == -1 and is_inner) or (poledirection != -1 and not is_inner) else 1
+    def get_sign(poledirection: int, bracket_type: str, current_structure: str) -> int:
+        is_tunnel = current_structure == '터널'
 
+        if poledirection == -1:
+            if bracket_type == 'I':
+                return 1 if is_tunnel else -1
+            elif bracket_type == 'O':
+                return -1 if is_tunnel else 1
+        elif poledirection == 1:
+            if bracket_type == 'I':
+                return 1
+            elif bracket_type == 'O':
+                return -1
     def calculate_wires_angle(self, pos: int, next_pos: int, length: int, start_offset: Vector3,
                               end_offset: Vector3) -> Vector3:
         """

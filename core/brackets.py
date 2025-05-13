@@ -82,9 +82,9 @@ class BracketManager(BaseManager):
         """
         is_i_type = self.check_current_is_i_type(i)
         current_type, bracket_type = self.get_current_type_and_bracket_type(is_i_type)
-        # 전주 방향에 따라 타입 변경
-        current_type, bracket_type = self.swap_type(current_type, bracket_type)
         current_structure = data.poles[i].current_structure
+        # 전주 방향에 따라 타입 변경
+        current_type, bracket_type = self.swap_type(current_type, bracket_type, current_structure)
         install_type, gauge = self.get_installtype_and_gauge(current_structure)
         return current_type, bracket_type, install_type, gauge
 
@@ -133,9 +133,9 @@ class BracketManager(BaseManager):
 
         return current_type, bracket_type
 
-    def swap_type(self, current_type: str, bracket_type: str) -> tuple[str, str]:
-        """전주 방향(poledirection)이 반대일 경우 브래킷 타입 전환"""
-        if self.poledirection == 1:
+    def swap_type(self, current_type: str, bracket_type: str, current_structure: str) -> tuple[str, str]:
+        """전주 방향(poledirection)이 반대일 경우와 터널일경우 브래킷 타입 전환"""
+        if self.poledirection == 1 or current_structure == '터널':
             current_type = 'O' if current_type == 'I' else 'I'
             bracket_type = 'outer' if bracket_type == 'inner' else 'inner'
         return current_type, bracket_type

@@ -24,24 +24,24 @@ class BVECSV:
                 bracketname = data.poles[i].Brackets[0].name
                 feederindex = data.poles[i].feeder.index
                 feedername = data.poles[i].feeder.name
+                feeder_x = data.poles[i].feeder.positionx
                 current_airjoint = data.poles[i].current_airjoint
                 current_structure = data.poles[i].current_structure
                 current_curve = data.poles[i].current_curve
                 gauge = data.poles[i].gauge
-                direction = data.poles[i].direction
+                mast_direction = data.poles[i].mast.direction
+                bracket_direction = data.poles[i].Brackets[0].direction
+                feeder_direction = data.poles[i].feeder.direction
 
-                if direction == Direction.LEFT:
-                    pitch = 0
-                    gauge *= -1
-                else:
-                    pitch = 180
-
+                mast_xoffset = gauge * mast_direction.value
+                bracket_pitch = 0 if bracket_direction == Direction.LEFT else 180
+                feeder_pitch = 0 if feeder_direction == Direction.LEFT else 180
                 # 구문 작성
                 self.lines.append(f',;{post_number}\n')
                 self.lines.append(f',;-----{current_airjoint}({current_structure})({current_curve})-----\n')
-                self.lines.append(f'{pos},.freeobj 0;{mastindex};{gauge},;{mastname}\n')
-                self.lines.append(f'{pos},.freeobj 0;{bracketindex};0;0;{pitch};,;{bracketname}\n\n')
-                self.lines.append(f'{pos},.freeobj 0;{feederindex};{gauge};0;{pitch};,;{feedername}\n\n')
+                self.lines.append(f'{pos},.freeobj 0;{mastindex};{mast_xoffset},;{mastname}\n')
+                self.lines.append(f'{pos},.freeobj 0;{bracketindex};0;0;{bracket_pitch};,;{bracketname}\n\n')
+                self.lines.append(f'{pos},.freeobj 0;{feederindex};{feeder_x};0;{feeder_pitch};,;{feedername}\n\n')
             except AttributeError as e:
                 logger.warning(f"poledata 데이터 누락: index {i}, 오류: {e}")
             except Exception as e:
