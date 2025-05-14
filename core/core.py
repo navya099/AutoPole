@@ -7,7 +7,7 @@ from .wire import WirePositionManager
 
 
 class MainProcess:
-    def __init__(self, design_params: dict[str, int | float], file_paths: dict[str, str]):
+    def __init__(self, datalbudle: DataBundle):
         self.feedermanager = None
         self.dxfmanager = None
         self.csvmanager = None
@@ -16,8 +16,7 @@ class MainProcess:
         self.bracket_manager = None
         self.loader = None
         self.pole_processor = None
-        self.design_params = design_params
-        self.file_paths = file_paths
+        self.datalbudle = datalbudle
         self.steps = []
 
     def run_with_callback(self, progress_callback=None):
@@ -51,26 +50,26 @@ class MainProcess:
 
     # 단계별 처리 함수
     def load_data(self):
-        self.loader = DataLoader(self.design_params, self.file_paths)
+        self.loader = DataLoader(self.datalbudle)
 
     def calc_pole(self):
-        self.pole_processor = PolePositionManager(self.loader.params)
+        self.pole_processor = PolePositionManager(self.loader)
         self.pole_processor.run()
 
     def install_bracket(self):
-        self.bracket_manager = BracketManager(self.loader.params, self.pole_processor.poledata)
+        self.bracket_manager = BracketManager(self.loader, self.pole_processor.poledata)
         self.bracket_manager.run()
 
     def place_mast(self):
-        self.mastmanager = MastManager(self.loader.params, self.pole_processor.poledata)
+        self.mastmanager = MastManager(self.loader, self.pole_processor.poledata)
         self.mastmanager.run()
 
     def install_feeder(self):
-        self.feedermanager = FeederManager(self.loader.params, self.pole_processor.poledata)
+        self.feedermanager = FeederManager(self.loader, self.pole_processor.poledata)
         self.feedermanager.run()
 
     def route_wire(self):
-        self.wiremanager = WirePositionManager(self.loader.params, self.pole_processor.poledata)
+        self.wiremanager = WirePositionManager(self.loader, self.pole_processor.poledata)
         self.wiremanager.run()
 
     def export_csv(self):

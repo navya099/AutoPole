@@ -1,10 +1,12 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+
+from fileio.dataloader import DataBundle
 from utils.logger import logger
 from core.core import MainProcess
 import threading
 import queue
-
+VERSION = "v1.0.4"
 
 class MainWindow(tk.Tk):
     def __init__(self):
@@ -19,6 +21,10 @@ class MainWindow(tk.Tk):
         # "종료" 버튼
         self.exit_button = tk.Button(self, text="종료", command=self.close_application)
         self.exit_button.pack(pady=20)
+
+        # 버전 정보 라벨
+        self.version_label = tk.Label(self, text=f"버전: {VERSION}", fg="gray")
+        self.version_label.pack(side="bottom", pady=(10, 5))  # 창 하단에 배치
 
         logger.info(f'MainWindow 초기화 완료')
 
@@ -265,22 +271,18 @@ class TaskWizard(tk.Toplevel):
 
     def run_main_process(self, q):
         try:
-            design_params: dict[str, int | float] = {
-                "designspeed": int(self.inputs[0].get()),
-                "linecount": int(self.inputs[1].get()),
-                "lineoffset": float(self.inputs[2].get()),
-                "poledirection": int(self.inputs[3].get()),
-                "mode": 0 if self.mode.get() == '기존 노선용' else 1
-            }
-
-            file_paths: dict[str, str] = {
-                "curve_path": self.file_paths[0].get(),
-                "pitch_path": self.file_paths[1].get(),
-                "coord_path": self.file_paths[2].get(),
-                "structure_path": self.file_paths[3].get()
-            }
-
-            process = MainProcess(design_params, file_paths)
+            databundle = DataBundle(
+                designspeed=int(self.inputs[0].get()),
+                linecount=int(self.inputs[1].get()),
+                lineoffset=float(self.inputs[2].get()),
+                poledirection=int(self.inputs[3].get()),
+                mode=0 if self.mode.get() == '기존 노선용' else 1,
+                curve_path=self.file_paths[0].get(),
+                pitch_path=self.file_paths[1].get(),
+                coord_path=self.file_paths[2].get(),
+                structure_path=self.file_paths[3].get()
+                )
+            process = MainProcess(databundle)
             process.run_with_callback(progress_callback=q.put)
             q.put("100|완료")  # 최종 완료 상태
         except Exception as e:

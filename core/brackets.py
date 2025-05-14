@@ -13,8 +13,8 @@ class BracketManager(BaseManager):
 
     """
 
-    def __init__(self, params, poledata):
-        super().__init__(params, poledata)
+    def __init__(self, dataloader, poledata):
+        super().__init__(dataloader, poledata)
         self.dictionaryofbracket = Dictionaryofbracket()  # 브래킷 데이터 클래스 가져오기
         logger.debug(f'BracketManager 초기화 완료')
 
@@ -28,18 +28,20 @@ class BracketManager(BaseManager):
     def create_bracket(self):
         data:  PoleDATAManager = self.poledata
 
-        for i in range(len(data.poles) - 1):
+        for i in range(len(data.poles)):
             try:
-                if self.mode == 0:  # 기존 노선용
+                if self.loader.databudle.mode == 0:  # 기존 노선용
                     current_type, bracket_type, install_type, gauge = self.create_bracket_with_old_alignment(i, data)
                 else:
                     current_type, bracket_type, install_type, gauge = self.create_bracket_with_new_alignment(i, data)
 
-                bracket_index = self.get_brackettype(self.designspeed, install_type, gauge, bracket_type)
+                bracket_index = self.get_brackettype(
+                    self.loader.databudle.designspeed, install_type, gauge, bracket_type
+                )
                 if install_type == 'Tn':
-                    bracket_full_name = f'CaKo{self.designspeed}-{install_type}-{current_type}'
+                    bracket_full_name = f'CaKo{self.loader.databudle.designspeed}-{install_type}-{current_type}'
                 else:
-                    bracket_full_name = f'CaKo{self.designspeed}-{install_type}{gauge}-{current_type}'
+                    bracket_full_name = f'CaKo{self.loader.databudle.designspeed}-{install_type}{gauge}-{current_type}'
 
                 if data.poles[i].direction == Direction.LEFT and install_type != 'Tn':
                     bracket_direction = Direction.LEFT
@@ -98,7 +100,7 @@ class BracketManager(BaseManager):
         Returns:
              bool
         """
-        if self.mode == 0:
+        if self.loader.databudle.mode == 0:
             #  todo 아직 미완성
             raise NotImplementedError
         else:
@@ -135,7 +137,7 @@ class BracketManager(BaseManager):
 
     def swap_type(self, current_type: str, bracket_type: str, current_structure: str) -> tuple[str, str]:
         """전주 방향(poledirection)이 반대일 경우와 터널일경우 브래킷 타입 전환"""
-        if self.poledirection == 1 or current_structure == '터널':
+        if self.loader.databudle.poledirection == 1 or current_structure == '터널':
             current_type = 'O' if current_type == 'I' else 'I'
             bracket_type = 'outer' if bracket_type == 'inner' else 'inner'
         return current_type, bracket_type

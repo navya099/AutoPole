@@ -1,9 +1,9 @@
 import random
 import traceback
-from enum import Enum
-from lib2to3.pgen2.tokenize import Bracket
 
 import pandas as pd
+
+from fileio.dataloader import DataLoader
 from fileio.fileloader import TxTFileHandler
 from utils.util import *
 from utils.Vector3 import Vector3
@@ -23,45 +23,12 @@ class BaseManager:
 
     Attributes:
         poledata (Optional[PoleDATAManager]): 전주 데이터
-        params (tuple): (설계 파라미터 딕셔너리, 데이터 리스트)
-        design_params (dict): 설계 파라미터
-        designspeed (float): 설계속도
-        linecount (float): 선로갯수
-        lineoffset (float): 선로 간격
-        poledirection (int): 전주 방향 (-1/1)
-        mode (int): 현재 모드 (0:기존노선용/ 1:새 노선용)
+        loader (DataLoader): 데이터로더 객체
     """
 
-    def __init__(self, params: tuple, poledata: Optional['PoleDATAManager'] = None):
+    def __init__(self, dataloader: DataLoader, poledata: Optional['PoleDATAManager'] = None):
         self.poledata: Optional[PoleDATAManager] = poledata  # ✅ PoleDATAManager.poledata 인스턴스를 가져옴
-        self.params = params  # ✅ DataLoader.params 인스턴스를 가져옴
-
-        # ✅ 첫 번째 요소는 design_params (딕셔너리)
-        self.design_params: dict[str, int | float] = self.params[0]
-        self.designspeed: int = self.design_params.get("designspeed", 250)
-        self.linecount: int = self.design_params.get("linecount", 1)
-        self.lineoffset: float = self.design_params.get("lineoffset", 0.0)
-        self.poledirection: int = self.design_params.get("poledirection", -1)
-        self.mode: int = self.design_params.get("mode", 0)
-
-        # ✅ 두 번째 요소는 list_params (리스트)
-        self.list_params: list = self.params[1]
-        self._unpack_list_params()
-
-    def _unpack_list_params(self):
-        if len(self.list_params) >= 5:
-            self.curve_list: list[tuple[float, float, float]] = self.list_params[0]
-            self.pitch_list: list[tuple[float, float]] = self.list_params[1]
-            self.coord_list: list[tuple[float, float, float]] = self.list_params[2]
-            self.struct_list: dict[str, list[tuple[int, int]]] = self.list_params[3]
-            self.end_km: int = self.list_params[4]
-        else:
-            logger.error("list_params의 길이가 5보다 작음")
-            self.curve_list = []
-            self.pitch_list = []
-            self.coord_list = []
-            self.struct_list = {}
-            self.end_km = 600  # 예외 발생 시 기본값
+        self.loader = dataloader  # ✅ DataLoader 인스턴스를 가져옴
 
 
 class PolePositionManager(BaseManager):
@@ -74,8 +41,8 @@ class PolePositionManager(BaseManager):
         posttype_list (list): 전주타입 리스트
     """
 
-    def __init__(self, params):
-        super().__init__(params)
+    def __init__(self, dataloader):
+        super().__init__(dataloader)
         self.pole_positions: list[int] = []
         self.airjoint_list: list[tuple[int, str]] = []
         self.post_number_lst: list[str] = []
@@ -90,8 +57,8 @@ class PolePositionManager(BaseManager):
         """
         모드에 따라 pole_positions을 생성하는 메소드
         """
-        if self.mode == 1:  # 새 노선용
-            self.pole_positions = self.distribute_pole_spacing_flexible(0, self.end_km, spans=(45, 50, 55, 60))
+        if self.loader.databudle.mode == 1:  # 새 노선용
+            self.pole_positions = self.distribute_pole_spacing_flexible(0.0, self.loader.end_km, spans=(45, 50, 55, 60))
             self.airjoint_list = self.define_airjoint_section(self.pole_positions)
             self.post_number_lst = self.generate_postnumbers(self.pole_positions)
             logger.info(f'전주 포지션 생성 완료\n pole_positions 갯수:{len(self.pole_positions)}\n,'
@@ -108,16 +75,20 @@ class PolePositionManager(BaseManager):
         """전주 위치 데이터를 가공"""
 
         data = PoleDATAManager()  # 인스턴스 생성
-        for i in range(len(self.pole_positions) - 1):
+        for i in range(len(self.pole_positions)):
             try:
                 pos = self.pole_positions[i]  # 전주 위치 station
-                next_pos = self.pole_positions[i + 1]  # 다음 전주 위치 station
+                if i < len(self.pole_positions) - 1:
+                    next_pos = self.pole_positions[i + 1]  # 다음 전주 위치 station
+                    current_span = next_pos - pos  # 현재 전주 span
+                else:
+                    next_pos = 0
+                    current_span = 0  # 현재 전주 span
 
-                current_span = next_pos - pos  # 현재 전주 span
                 # 현재 위치의 구조물 및 곡선 정보 가져오기
-                current_structure = isbridge_tunnel(pos, self.struct_list)
-                current_curve, r, c = iscurve(pos, self.curve_list)  # 현재 전주 위치의 곡선
-                current_slope, pitch = isslope(pos, self.pitch_list)  # 현재 전주 위치의 구배
+                current_structure = isbridge_tunnel(pos, self.loader.struct_dic)
+                current_curve, r, c = iscurve(pos, self.loader.curve_list)  # 현재 전주 위치의 곡선
+                current_slope, pitch = isslope(pos, self.loader.pitch_list)  # 현재 전주 위치의 구배
                 current_airjoint = check_isairjoint(pos, self.airjoint_list)  # 현재 전주 위치의 AJ
                 post_number = find_post_number(self.post_number_lst, pos)  # 현재 전주넘버
 
@@ -131,7 +102,10 @@ class PolePositionManager(BaseManager):
                 data.poles[i].pitch = pitch
                 data.poles[i].current_airjoint = current_airjoint
                 data.poles[i].post_number = post_number
-                data.poles[i].direction = Direction.LEFT if self.poledirection == -1 else Direction.RIGHT  # 전체 방향
+                if self.loader.databudle.poledirection == -1:
+                    data.poles[i].direction = Direction.LEFT
+                else:
+                    data.poles[i].direction = Direction.RIGHT  # 전체 방향
 
                 block = PoleDATA()  # 폴 블록 생성
                 data.poles.append(block)
@@ -146,7 +120,8 @@ class PolePositionManager(BaseManager):
                 )
                 logger.error(error_message)
                 continue
-
+        # 마지막 블록 제거
+        data.poles.pop()
         if len(data.poles) > 0:
             # 속성에 추가
             self.poledata = data
@@ -201,7 +176,7 @@ class PolePositionManager(BaseManager):
 
     @staticmethod
     def distribute_pole_spacing_flexible(
-            start_km: int, end_km: int, spans: tuple[int, ...] = (45, 50, 55, 60)
+            start_km: float, end_km: float, spans: tuple[int, ...] = (45, 50, 55, 60)
     ) -> list[int]:
         """
         45, 50, 55, 60m 범위에서 전주 간격을 균형 있게 배분하여 전체 구간을 채우는 함수
@@ -425,18 +400,18 @@ class FeederDATA(Element):
 class MastManager(BaseManager):
     """전주(Mast) 데이터를 설정하는 클래스"""
 
-    def __init__(self, params, poledata):
-        super().__init__(params, poledata)
+    def __init__(self, dataloader, poledata):
+        super().__init__(dataloader, poledata)
 
     def run(self):
         self.create_mast()
 
     def create_mast(self):
         data = self.poledata
-        for i in range(len(data.poles) - 1):
+        for i in range(len(data.poles)):
             try:
                 current_structure = data.poles[i].current_structure
-                mast_index, mast_name = get_mast_type(self.designspeed, current_structure)
+                mast_index, mast_name = get_mast_type(self.loader.databudle.designspeed, current_structure)
                 data.poles[i].mast.name = mast_name
                 data.poles[i].mast.index = mast_index
                 data.poles[i].mast.direction = data.poles[i].Brackets[0].direction
@@ -456,15 +431,15 @@ class MastManager(BaseManager):
 class FeederManager(BaseManager):
     """급전선 설비(전선x) 데이터를 설정하는 클래스"""
 
-    def __init__(self, params, poledata):
-        super().__init__(params, poledata)
+    def __init__(self, dataloader, poledata):
+        super().__init__(dataloader, poledata)
 
     def run(self):
         self.create_feeder()
 
     def create_feeder(self):
         data = self.poledata
-        speed = self.designspeed
+        speed = self.loader.databudle.designspeed
         # 구조별 설계속도에 따른 피더 인덱스 맵
         feeder_map = {
             ('토공', 150): 1234,
@@ -478,7 +453,7 @@ class FeederManager(BaseManager):
             ('터널', 350): 598,
         }
 
-        for i in range(len(data.poles) - 1):
+        for i in range(len(data.poles)):
             current_structure = data.poles[i].current_structure
 
             feederindex = feeder_map.get((current_structure, speed), 1234)

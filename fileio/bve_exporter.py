@@ -5,16 +5,27 @@ from utils.util import Direction
 
 
 class BVECSV:
+    """BVE CSV 구문을 생성하는 클래스
+    Attributes:
+        poledata (PoleDATAManager): PoleDATAManager.poledata 인스턴스
+        wiredata (WireDataManager): WireDataManager.wiredata 인스턴스
+        lines (list[str]]): 구문 정보를 저장할 문자열 리스트
+    """
+
     def __init__(self, poledata=None, wiredata=None):
         self.poledata: PoleDATAManager = poledata  # ✅ PoleDATAManager.poledata 인스턴스를 가져옴
         self.wiredata: WireDataManager = wiredata
         self.lines = []
+        logger.debug(f'BVECSV 인스턴스 초기화 완료')
 
     def create_pole_csv(self):
+        """
+        전주 구문 생성 메서드
+        """
         self.lines = []  # 코드 실행전 초기화
         self.lines.append(',;전주구문\n')
         data = self.poledata
-        for i in range(len(data.poles) - 1):
+        for i in range(len(data.poles)):
             try:
                 pos = data.poles[i].pos
                 post_number = data.poles[i].post_number
@@ -49,6 +60,9 @@ class BVECSV:
         logger.info(f'create_pole_csv실행이 완료됐습니다.')
 
     def create_wire_csv(self):
+        """
+        전선 구문 생성 메서드
+        """
         self.lines = []  # 코드 실행전 초기화
         self.lines.append(',;전차선구문\n')
         data = self.poledata
@@ -83,9 +97,11 @@ class BVECSV:
                 # 구문 작성
                 self.lines.append(f',;{post_number}\n')
                 self.lines.append(f',;-----{current_airjoint}({current_structure})({current_curve})-----\n')
-                self.lines.append(f'{pos},.freeobj 0;{contact_index};{stagger};0;{contact_yaw};{contact_pitch};,;{contact_name}\n\n')
+                self.lines.append(f'{pos},.freeobj 0;'
+                                  f'{contact_index};{stagger};0;{contact_yaw};{contact_pitch};,;{contact_name}\n\n')
                 self.lines.append(f'{pos},.freeobj 0;{af_index};{af_x};{af_y};{af_yaw};{af_pitch};,;{af_name}\n\n')
-                self.lines.append(f'{pos},.freeobj 0;{fpw_index};{fpw_x};{fpw_y};{fpw_yaw};{fpw_pitch};,;{fpw_name}\n\n')
+                self.lines.append(f'{pos},.freeobj 0;'
+                                  f'{fpw_index};{fpw_x};{fpw_y};{fpw_yaw};{fpw_pitch};,;{fpw_name}\n\n')
             except AttributeError as e:
                 logger.warning(f"Wire 데이터 누락: index {i}, 오류: {e}")
             except Exception as e:
@@ -94,6 +110,9 @@ class BVECSV:
         logger.info(f'create_wire_csv실행이 완료됐습니다.')
 
     def create_csvtotxt(self):
+        """
+        구문 저장 메서드
+        """
         txthandler = TxTFileHandler()
         txthandler.save_file_dialog()  # 파일 저장 대화상자 열기
         txthandler.write_to_file(self.lines)

@@ -1,4 +1,6 @@
 import traceback
+from typing import Any
+
 from .pole import BaseManager, Element, PoleDATAManager
 from utils.util import *
 import os
@@ -20,19 +22,23 @@ class WirePositionManager(BaseManager):
             interpolatedata(CoordinateInterpolator): 폴리선에서 보간 좌표 계산을 위한 클래스
     """
 
-    def __init__(self, params, poledata):
-        super().__init__(params, poledata)
+    def __init__(self, dataloader, poledata):
+        super().__init__(dataloader, poledata)
         self.jsonmanager = ConfigManager(config_path)
         self.spandata = SpanDatabase(self.jsonmanager.get_config())
         self.wiredata = None
-        self.polyline_with_sta = [(i * 25, x, y, z) for i, (x, y, z) in enumerate(self.coord_list)]
+        self.polyline_with_sta = [(i * 25, x, y, z) for i, (x, y, z) in enumerate(self.loader.coord_list)]
         self.interpolatedata = CoordinateInterpolator(self.polyline_with_sta)
+        logger.debug(f'WirePositionManager 초기화 완료')
 
     def run(self):
         self.create_wires(['contact', 'af', 'fpw'])
 
     def create_wires(self, wire_types: list[str]):
-        """전선데이터를 가공"""
+        """전선데이터를 가공
+        Args:
+            wire_types (list[str]): 전차선 타입 리스트
+        """
         data: PoleDATAManager = self.poledata
         spandata = self.spandata
         wiredata = WireDataManager()  # 인스턴스 생성
@@ -87,6 +93,8 @@ class WirePositionManager(BaseManager):
                 )
                 logger.error(error_message)
                 continue
+        # 마지막 블록 제거
+        wiredata.wires.pop()
         if len(wiredata.wires) > 0:
             # 속성에 추가
             self.wiredata = wiredata
@@ -95,14 +103,41 @@ class WirePositionManager(BaseManager):
             self.wiredata = None
             logger.error("wiredata가 None입니다! 데이터 생성에 실패했습니다.")
 
-    def _set_contact_wire(self, wiredata, i, data, spandata,
-                          pos, next_pos, pos_coord, next_pos_coord,
-                          vector_pos, span, current_structure, next_structure):
+    def _set_contact_wire(
+            self,
+            wiredata: 'WireDataManager',
+            i: int,
+            data: PoleDATAManager,
+            spandata: 'SpanDatabase',
+            pos: float,
+            next_pos: float,
+            pos_coord: Vector3,
+            next_pos_coord: Vector3,
+            vector_pos: float,
+            span: float,
+            current_structure: str,
+            next_structure: str,
+    ):
+        """전차선 속성을 설정하는 private 메서드
+            Parameters:
+                wiredata (WireDataManager): 전선데이터
+                i (int): 인덱스
+                data (PoleDATAManager): 전주데이터
+                spandata (SpanDatabase) : spandic 데이터
+                pos (int): 현재 위치 m
+                next_pos (int): 다음 위치 m
+                pos_coord (Vector3): 현재 좌표 Vector3
+                next_pos_coord (Vector3): 다음 좌표 Vector3
+                vector_pos (float): 현재 전주의 각도
+                span (int): 경간 m
+                current_structure (str): 현재 구조물
+                next_structure (str): 현재 구조물
+        """
         current_bracket_type = data.poles[i].Brackets[0].element_type
         next_bracket_type = data.poles[i + 1].Brackets[0].element_type
-        contact_index = spandata.get_span_indices(self.designspeed, current_structure, 'contact', span)
-        sign = self.get_sign(self.poledirection, current_bracket_type, current_structure)
-        next_sign = self.get_sign(self.poledirection, next_bracket_type, next_structure)
+        contact_index = spandata.get_span_indices(self.loader.databudle.designspeed, current_structure, 'contact', span)
+        sign = self.get_sign(self.loader.databudle.poledirection, current_bracket_type, current_structure)
+        next_sign = self.get_sign(self.loader.databudle.poledirection, next_bracket_type, next_structure)
         lateral_offset = sign * 0.2
         next_offset = next_sign * 0.2
         planangle = self.interpolatedata.calculate_curve_angle(pos, next_pos, lateral_offset, next_offset)
@@ -116,12 +151,35 @@ class WirePositionManager(BaseManager):
         wire.pitch = topdown_angle
         wire.name = 'contact'
 
-    def _set_common_wire(self, wiredata, i, wire_type, spandata,
-                         pos, next_pos, span, current_structure, next_structure, direction: Direction):
-
-        index = spandata.get_span_indices(self.designspeed, current_structure, wire_type, span)
-        offset = list(spandata.get_offset(self.designspeed, wire_type, current_structure))
-        next_offset = list(spandata.get_offset(self.designspeed, wire_type, next_structure))
+    def _set_common_wire(
+            self,
+            wiredata: 'WireDataManager',
+            i: int,
+            wire_type: list[str],
+            spandata: 'SpanDatabase',
+            pos: float,
+            next_pos: float,
+            span: float,
+            current_structure: str,
+            next_structure: str,
+            direction: Direction
+    ) -> None:
+        """급전선,보호선 속성을 설정하는 private 메서드
+                    Parameters:
+                        wiredata (WireDataManager): 전선데이터
+                        i (int): 인덱스
+                        wire_type (list[str]): 전주타입 리스트
+                        spandata (SpanDatabase) : spandic 데이터
+                        pos (int): 현재 위치 m
+                        next_pos (int): 다음 위치 m
+                        span (int): 경간 m
+                        current_structure (str): 현재 구조물
+                        next_structure (str): 현재 구조물
+                        direction (Direction): 방향
+                """
+        index = spandata.get_span_indices(self.loader.databudle.designspeed, current_structure, wire_type, span)
+        offset = list(spandata.get_offset(self.loader.databudle.designspeed, wire_type, current_structure))
+        next_offset = list(spandata.get_offset(self.loader.databudle.designspeed, wire_type, next_structure))
 
         if direction == Direction.LEFT:
             offset[0] *= -1
@@ -139,8 +197,17 @@ class WirePositionManager(BaseManager):
         wire.yaw = wires_angle.x
         wire.pitch = wires_angle.y
         wire.roll = wires_angle.z
+
     @staticmethod
     def get_sign(poledirection: int, bracket_type: str, current_structure: str) -> int:
+        """현재 타입의 부호를 반환하는 메서드
+            Parameters:
+                poledirection (int): 전주방향(-1/1)
+                bracket_type (str): 브래킷 타입 I,O
+                current_structure (str): 현재 구조물
+            Returns:
+                int (-1 | 1)
+        """
         is_tunnel = current_structure == '터널'
 
         if poledirection == -1:
@@ -153,6 +220,7 @@ class WirePositionManager(BaseManager):
                 return 1
             elif bracket_type == 'O':
                 return -1
+
     def calculate_wires_angle(self, pos: int, next_pos: int, length: int, start_offset: Vector3,
                               end_offset: Vector3) -> Vector3:
         """
@@ -189,21 +257,26 @@ class WireDataManager:
 
 class WireDATA:
     """
-    전주 설비 전체를 나타내는 데이터 구조
-    기둥 브래킷 금구류 포함 데이터
+    전선 설비 전체를 나타내는 데이터 구조
     Attributes:
         contactwire (ContactWireElement): 전차선 요소
         afwire (FeederWireElement): 급전선요소
-        fpwwire (AFwireElement): 보호선요소
+        fpwwire (FPWwireElement): 보호선요소
     """
 
     def __init__(self):
         self.contactwire = ContactWireElement()
         self.afwire = FeederWireElement()
-        self.fpwwire = AFwireElement()
+        self.fpwwire = FPWwireElement()
 
 
 class WireElement(Element):
+    """
+    전선 요소 상위클래스 Element상속
+    Attributes:
+        height (float): 레일면에서의 높이
+        length (float): 전선 길이
+    """
     def __init__(self):
         super().__init__()
         self.height: float = 0.0  # 레일면에서의 높이
@@ -211,6 +284,12 @@ class WireElement(Element):
 
 
 class ContactWireElement(WireElement):
+    """
+        전차선 클래스 WireElement상속
+        Attributes:
+            systemheihgt (float): 가고
+            stagger (float): 전차선 편위
+    """
     def __init__(self):
         super().__init__()
         self.systemheihgt: float = 0.0  # 가고 :
@@ -218,16 +297,27 @@ class ContactWireElement(WireElement):
 
 
 class FeederWireElement(WireElement):
+    """
+    급전선 클래스 WireElement상속
+    """
     def __init__(self):
         super().__init__()
 
 
-class AFwireElement(WireElement):
+class FPWwireElement(WireElement):
+    """
+    보호선 클래스 WireElement상속
+    """
     def __init__(self):
         super().__init__()
 
 
-def get_json_spandata():
+def get_json_spandata() -> dict[str, Any]:
+    """외부 브래킷 정보 JSON을 불러오는 함수
+    Parameters:
+    Returns:
+        spandata (dict[str, Any)
+    """
     file = config_path  # 파이선 소스 폴더내의 config폴더에서 찾기
     configmanager = ConfigManager(file)
     spandata = configmanager.config

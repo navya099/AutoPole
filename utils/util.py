@@ -244,11 +244,11 @@ class CoordinateInterpolator:
 
         if point_a and point_b:
             # offset 점 계산
-            offset_point_a = calculate_offset_point(vector_a, (point_a.x, point_a.y, point_a.z), stagger1)
-            offset_point_b = calculate_offset_point(vector_b, (point_b.x, point_b.y, point_b.z), stagger2)
+            offset_point_a = calculate_offset_point(vector_a, point_a, stagger1)
+            offset_point_b = calculate_offset_point(vector_b, point_b, stagger2)
 
             # offset점끼리의 각도
-            a_b_angle = calculate_bearing(offset_point_a[0], offset_point_a[1], offset_point_b[0], offset_point_b[1])
+            a_b_angle = calculate_bearing(offset_point_a.x, offset_point_a.y, offset_point_b.x, offset_point_b.y)
 
             # 최종 각도
             final_anlge = vector_a - a_b_angle
@@ -322,14 +322,13 @@ def get_wire_span_data(designspeed, currentspan, current_structure):
 
 
 # offset 좌표 반환
-def calculate_offset_point(vector: float, point_a: tuple[float, float, float], offset_distance: float) -> \
-        tuple[float, float]:
+def calculate_offset_point(vector: float, point_a: Vector3, offset_distance: float) -> Vector3:
     if offset_distance > 0:  # 우측 오프셋
         vector -= 90
     else:
         vector += 90  # 좌측 오프셋
-    offset_a_xy = calculate_destination_coordinates(point_a[0], point_a[1], vector, abs(offset_distance))
-    return offset_a_xy
+    offset_a_xy = calculate_destination_coordinates(point_a.x, point_a.y, vector, abs(offset_distance))
+    return Vector3(offset_a_xy[0],offset_a_xy[1], point_a.z)
 
 
 def change_permile_to_degree(permile: float) -> float:

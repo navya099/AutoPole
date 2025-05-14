@@ -52,7 +52,22 @@ Traceback (most recent call last):
                   ~~~~~~~~~~^~~~~
 TypeError: unsupported operand type(s) for *: 'NoneType' and 'float'
 
+
 ---
+
+
+## [1.0.4] - 2025-05-14
+### 🐞 Fixed`: 버그 수정
+- pole position과 pole길이 불일치
+- dxf csv pole wire 독스트링및 타입힌트 강화
+- 발견된 버그:
+- dxf 출력시 list out of range
+### 🔧 Changed
+- dataloader 파라미터 전달방식 변경
+- databundle클래스로 전달
+
+---
+
 ## [예정 버전]
 
 ### [1.1.0] - (예정)
