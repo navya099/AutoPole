@@ -6,7 +6,9 @@ from utils.logger import logger
 from core.core import MainProcess
 import threading
 import queue
+
 VERSION = "v1.0.4"
+
 
 class MainWindow(tk.Tk):
     def __init__(self):
@@ -152,7 +154,7 @@ class TaskWizard(tk.Toplevel):
             'curve_info.txt',
             'pitch_info.txt',
             'bve_coordinates.txt',
-            'structure.xlsx'
+            'structures.xlsx'
         ]
 
         for i in range(len(file_tilte_list)):
@@ -281,7 +283,7 @@ class TaskWizard(tk.Toplevel):
                 pitch_path=self.file_paths[1].get(),
                 coord_path=self.file_paths[2].get(),
                 structure_path=self.file_paths[3].get()
-                )
+            )
             process = MainProcess(databundle)
             process.run_with_callback(progress_callback=q.put)
             q.put("100|완료")  # 최종 완료 상태

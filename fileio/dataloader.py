@@ -71,7 +71,7 @@ class DataLoader:
             self.struct_dic = self.excelprocessor.process_structure_data()
 
         else:
-            logger.error("structure 파일 경로가 설정되지 않았습니다.")
+            logger.error("structures 파일 경로가 설정되지 않았습니다.")
             self.struct_dic = {}
         try:
             self.last_block = find_last_block(self.data) if self.data else 0
