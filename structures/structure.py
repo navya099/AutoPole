@@ -56,30 +56,24 @@ class Tunnel(Structure):
         super().__init__(name, '터널', startsta, endsta)
 
 
-class StructureCollection:
-    """구조물들을 컬렉션하는 클래스
+class StructureCollection(list):
+    """구조물들을 컬렉션하는 클래스(리스트 상속)
     Attributes:
         structures (list): 구조물 명칭
 
     """
     def __init__(self):
+        super().__init__()
         self.structures: list[Structure] = []
 
-    def add(self, structure: Structure) -> None:
-        self.structures.append(structure)
-
-    def extend(self, structures: List[Structure]) -> None:
-        self.structures.extend(structures)
-
-    def get_by_type(self, structuretype: str) -> List[Structure]:
+    def get_by_type(self, structuretype: str) -> list[Structure]:
         return [s for s in self.structures if s.structuretype == structuretype]
 
-    def find_containing(self, targetsta: float) -> Optional[Structure]:
+    def find_containing(self, targetsta: float) -> Structure:
         """targetsta가 포함된 첫 번째 구조물을 반환"""
         for s in self.structures:
             if s.isstructure(targetsta):
                 return s
-        return None
 
-    def all_structures(self) -> List[Structure]:
+    def all_structures(self) -> list[Structure]:
         return self.structures

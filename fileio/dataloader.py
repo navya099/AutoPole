@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from utils.logger import logger
+from geometry.alignment import BVEAlignment
+from structures.structure import StructureCollection
 from .fileloader import TxTFileHandler, ExcelFileHandler, PolylineHandler
-from utils.util import *
 
 
 @dataclass
@@ -33,59 +35,42 @@ class DataLoader:
     def __init__(self, databudle: DataBundle):
         self.databudle = databudle
         self.last_block: int = 0
-
+        self.bvealignment: BVEAlignment = BVEAlignment()
+        self.structures: StructureCollection = StructureCollection()
         # ✅ 파일 로드 (빈 문자열 예외 처리 추가)
         # 인스턴스 추가
         self.txtprocessor = TxTFileHandler()
         self.excelprocessor = ExcelFileHandler()
         self.polylineprocessor = PolylineHandler()
 
+        # 초기화 메서드 실행
+        self.load_alignment_data()
+
+    def load_alignment_data(self):
         if self.databudle.curve_path:
             self.txtprocessor.set_filepath(self.databudle.curve_path)  # self속성에 경로 추가
             self.txtprocessor.read_file_content()  # 파일 읽기 splitlines
-            self.data = self.txtprocessor.get_data()  # get
-            self.curve_list = self.txtprocessor.process_info(mode='curve')
+            self.txtprocessor.process_info(self.bvealignment, mode='curve')
         else:
+
             logger.error("curve_info 파일 경로가 설정되지 않았습니다.")
-            self.data = ''
-            self.curve_list = []
 
         if self.databudle.pitch_path:
             self.txtprocessor.set_filepath(self.databudle.pitch_path)
             self.txtprocessor.read_file_content()
-            self.pitch_list = self.txtprocessor.process_info(mode='pitch')
+            self.txtprocessor.process_info(self.bvealignment, mode='pitch')
         else:
             logger.error("pitch_info 파일 경로가 설정되지 않았습니다.")
-            self.pitch_list = []
 
         if self.databudle.coord_path:
             self.polylineprocessor.set_filepath(self.databudle.coord_path)
-            self.polylineprocessor.convert_txt_to_polyline()
-            self.coord_list = self.polylineprocessor.get_polyline()
+            self.polylineprocessor.convert_txt_to_polyline(self.bvealignment)
         else:
             logger.error("coord_info 파일 경로가 설정되지 않았습니다.")
-            self.coord_list = []
 
         if self.databudle.structure_path:
             self.excelprocessor.set_filepath(self.databudle.structure_path)
-            self.struct_dic = self.excelprocessor.process_structure_data()
+            self.structures = self.excelprocessor.process_structure_data()
 
         else:
             logger.error("structures 파일 경로가 설정되지 않았습니다.")
-            self.struct_dic = {}
-        try:
-            self.last_block = find_last_block(self.data) if self.data else 0
-            logger.info(f" last_block {self.last_block}")
-        except Exception as e:
-            logger.error(f"last_block 계산 오류: {e}")
-            self.last_block = 0
-
-        self.start_km: float = 0.0
-        self.end_km: float = (self.last_block / 1000) if self.last_block else 600  # 마지막측점 예외시 600
-        logger.info(f""" start_km : {self.start_km}
-                    end_km {self.end_km}""")
-
-
-
-
-

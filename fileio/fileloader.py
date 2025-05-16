@@ -1,5 +1,7 @@
 import datetime
 
+from geometry.alignment import BVEAlignment
+from utils.Vector3 import Vector3
 from utils.logger import logger
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -168,30 +170,60 @@ class TxTFileHandler(BaseFileHandler):
             logger.error(f"파일 처리 중 오류 발생: {e}", exc_info=True)
             return []
 
-    def process_info(self, columns: list[str] = None, delimiter: str = ',', mode: str = 'curve') -> list[tuple[float,...]]:
-        """txt 파일을 읽고 선택적 열(column) 데이터를 반환하는 함수"""
+    def process_info(self, bvealignment: BVEAlignment, columns: list[str] = None,
+                     delimiter: str = ',', mode: str = 'curve') -> BVEAlignment:
+        if not self.filepath:
+            logger.warning("파일 경로가 설정되지 않았습니다.")
+            return bvealignment
+
+        if mode == 'curve':
+            return self._process_curve_info(bvealignment, columns, delimiter)
+        elif mode == 'pitch':
+            return self._process_pitch_info(bvealignment, columns, delimiter)
+        else:
+            logger.warning(f"지원하지 않는 모드: {mode}")
+            return bvealignment
+
+    def _process_curve_info(self, bvealignment: BVEAlignment, columns: list[str], delimiter: str) -> BVEAlignment:
         if columns is None:
-            # 기본적인 columns 이름 설정
-            if mode == 'curve':
-                columns = ['sta', 'radius', 'cant']
-            else:
-                columns = ['sta', 'radius']
+            columns = ['sta', 'radius', 'cant']
 
-        curve_list = []
-
-        # 텍스트 파일(.txt) 읽기
         try:
-            df_curve = pd.read_csv(self.filepath, sep=delimiter, header=None, names=columns)
+            df = pd.read_csv(self.filepath, sep=delimiter, header=None, names=columns)
         except Exception as e:
-            logger.error(f"파일 읽는 중 오류 발생: {e}", exc_info=True)
-            return []
+            logger.error(f"곡선 파일 읽기 오류: {e}", exc_info=True)
+            return bvealignment
 
-        # 데이터 처리
-        for _, row in df_curve.iterrows():
-            curve_data = tuple(row[col] for col in columns)
-            curve_list.append(curve_data)
+        from geometry.alignment import Curve
+        for _, row in df.iterrows():
+            curve = Curve()
+            curve.startsta = float(row['sta'])
+            curve.radius = float(row['radius'])
+            curve.cant = float(row['cant'])
+            bvealignment.curves.append(curve)
 
-        return curve_list
+        logger.info(f"곡선 데이터 {len(bvealignment.curves)}개 로드 완료")
+        return bvealignment
+
+    def _process_pitch_info(self, bvealignment: BVEAlignment, columns: list[str], delimiter: str) -> BVEAlignment:
+        if columns is None:
+            columns = ['sta', 'pitch']
+
+        try:
+            df = pd.read_csv(self.filepath, sep=delimiter, header=None, names=columns)
+        except Exception as e:
+            logger.error(f"종단기울기 파일 읽기 오류: {e}", exc_info=True)
+            return bvealignment
+
+        from geometry.alignment import Pitch
+        for _, row in df.iterrows():
+            pitch = Pitch()
+            pitch.startsta = float(row['sta'])
+            pitch.pitch = float(row['pitch'])
+            bvealignment.pitches.append(pitch)
+
+        logger.info(f"기울기 데이터 {len(bvealignment.pitches)}개 로드 완료")
+        return bvealignment
 
     def read_file_content(self, encoding='utf-8'):
         """파일을 실제로 읽고 데이터를 처리하는 메소드(부모 메소드오버라이딩"""
@@ -239,37 +271,32 @@ class TxTFileHandler(BaseFileHandler):
 
 class PolylineHandler(TxTFileHandler):
     """
-    폴리라인좌표 생성 클래스
-    Attributes:
-        points(list[tuple[float, float, float]]): 좌표리스트(x,y,z)
+    폴리라인 좌표 생성 클래스 TxTFileHandler 상속
     """
     def __init__(self):
         super().__init__()
-        self.points: list[tuple[float, float, float]] = []
 
     def load_polyline(self):
         super().select_file("bve좌표 파일 선택", [("txt files", "*.txt"), ("All files", "*.*")])
 
-    def convert_txt_to_polyline(self):
-        """3D 좌표를 읽어오는 메소드"""
-        # 파일을 처리하여 데이터를 가져옵니다.
+    def convert_txt_to_polyline(self, bvealignment: BVEAlignment) -> BVEAlignment:
+        """3D 좌표를 읽어와 BVEAlignment 객체에 추가합니다."""
         super().read_file_content()
 
-        data = self.file_data
-        points = []
-        for line in data:
-            # 쉼표로 구분된 값을 읽어서 float로 변환
+        for line in self.file_data:
+            parts = line.strip().split(',')
+            if len(parts) != 3:
+                logger.warning(f"좌표가 3개가 아닙니다: {line.strip()}")
+                continue
             try:
-                x, y, z = map(float, line.strip().split(','))
-                points.append((x, y, z))
+                x, y, z = map(float, parts)
+                bvealignment.coords.append(Vector3(x, y, z))
             except ValueError:
                 logger.warning(f"잘못된 형식의 데이터가 발견되었습니다: {line.strip()}")
 
-        self.points = points
+        return bvealignment
 
-    def get_polyline(self):
-        """읽어온 3D 좌표를 반환하는 메소드"""
-        return self.points
+
 
 
 class ExcelFileHandler(BaseFileHandler):
