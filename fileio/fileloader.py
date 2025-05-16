@@ -1,6 +1,7 @@
 import datetime
 
 from geometry.alignment import BVEAlignment
+from structures.structure import StructureCollection, Bridge, Tunnel, StructureFactory
 from utils.Vector3 import Vector3
 from utils.logger import logger
 import tkinter as tk
@@ -17,6 +18,7 @@ class BaseFileHandler:
         self.filepath: str = ''
         self.filename: str = ''
         self.file_data: list[str] = []
+
     def select_file(self, title: str, file_types: list[tuple[str, str]]):
         """공통 파일 선택 메서드"""
         logger.debug(f"{title} 파일 선택 창을 엽니다.")
@@ -220,9 +222,9 @@ class TxTFileHandler(BaseFileHandler):
             pitch = Pitch()
             pitch.startsta = float(row['sta'])
             pitch.pitch = float(row['pitch'])
-            bvealignment.pitches.append(pitch)
+            bvealignment.pitchs.append(pitch)
 
-        logger.info(f"기울기 데이터 {len(bvealignment.pitches)}개 로드 완료")
+        logger.info(f"기울기 데이터 {len(bvealignment.pitchs)}개 로드 완료")
         return bvealignment
 
     def read_file_content(self, encoding='utf-8'):
@@ -273,6 +275,7 @@ class PolylineHandler(TxTFileHandler):
     """
     폴리라인 좌표 생성 클래스 TxTFileHandler 상속
     """
+
     def __init__(self):
         super().__init__()
 
@@ -293,10 +296,8 @@ class PolylineHandler(TxTFileHandler):
                 bvealignment.coords.append(Vector3(x, y, z))
             except ValueError:
                 logger.warning(f"잘못된 형식의 데이터가 발견되었습니다: {line.strip()}")
-
+        logger.info(f"좌표 데이터 {len(bvealignment.coords)}개 로드 완료")
         return bvealignment
-
-
 
 
 class ExcelFileHandler(BaseFileHandler):
@@ -325,7 +326,8 @@ class ExcelFileHandler(BaseFileHandler):
             # 첫 번째 열만 str 형식으로, 나머지는 자동 형식
             dtype_dict = {0: str}  # 첫 번째 열만 str로 설정 (0번째 인덱스 열)
             # xlsx 파일 읽기
-            self.excel_BRIDGE_Data = pd.read_excel(self.filepath, sheet_name='교량', header=None, dtype=dtype_dict)  # 첫 번째 행을 헤더로 사용
+            self.excel_BRIDGE_Data = pd.read_excel(self.filepath, sheet_name='교량', header=None,
+                                                   dtype=dtype_dict)  # 첫 번째 행을 헤더로 사용
             self.excel_TUNNEL_Data = pd.read_excel(self.filepath, sheet_name='터널', header=None, dtype=dtype_dict)
             logger.info("엑셀 파일이 성공적으로 읽혔습니다.")
         except FileNotFoundError:
@@ -338,33 +340,41 @@ class ExcelFileHandler(BaseFileHandler):
             logger.error(f"알 수 없는 오류 발생: {e}", exc_info=True)
             return None
 
-    def process_structure_data(self) -> dict[str, list[tuple[int, int]]]:
+    def process_structure_data(self, structures: StructureCollection) -> StructureCollection:
         """교량과 터널 구간 정보를 처리하는 메소드"""
         self.read_excel()
-        structure_dic = {'bridge': [], 'tunnel': []}
 
         if self.excel_BRIDGE_Data is None or self.excel_TUNNEL_Data is None:
             logger.warning("엑셀 데이터가 로드되지 않았습니다.")
-            return structure_dic
+            return structures
 
         # 첫 번째 행을 열 제목으로 설정
         self.excel_BRIDGE_Data.columns = ['br_NAME', 'br_START_STA', 'br_END_STA', 'br_LENGTH']
         self.excel_TUNNEL_Data.columns = ['tn_NAME', 'tn_START_STA', 'tn_END_STA', 'tn_LENGTH']
 
         try:
-            # 교량 구간과 터널 구간 정보
             for _, row in self.excel_BRIDGE_Data.iterrows():
-                structure_dic['bridge'].append((row['br_START_STA'], row['br_END_STA']))
+                s = StructureFactory.create_structure(
+                    structuretype='교량',
+                    name=row['br_NAME'],
+                    startsta=row['br_START_STA'],
+                    endsta=row['br_END_STA']
+                )
+                structures.append(s)
 
             for _, row in self.excel_TUNNEL_Data.iterrows():
-                structure_dic['tunnel'].append((row['tn_START_STA'], row['tn_END_STA']))
-
-            logger.info("교량과 터널 정보가 성공적으로 처리되었습니다.")
+                s = StructureFactory.create_structure(
+                    structuretype='터널',
+                    name=row['tn_NAME'],
+                    startsta=row['tn_START_STA'],
+                    endsta=row['tn_END_STA']
+                )
+                structures.append(s)
         except Exception as e:
             logger.error(f"구조 데이터 처리 중 오류 발생: {e}", exc_info=True)
-            return {}
+            return structures
 
-        return structure_dic
+        return structures
 
 
 def buffered_write(filename, lines):

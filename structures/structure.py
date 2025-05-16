@@ -1,20 +1,24 @@
+from dataclasses import dataclass
 from utils.logger import logger
 
+"""
+StructureFactory 클래스로 구조물 생성추상화
+"""
 
+
+@dataclass
 class Structure:
     """구조물 공통 기능을 관리하는 부모 클래스
-        Attributes:
-            name (str): 구조물 명칭
-            structuretype (str): 구조물 종류(교량/터널)
-            startsta(float): 시작 측점 m
-            endsta(float): 끝 측점 m
-        """
-
-    def __init__(self, name: str, structuretype: str, startsta: float, endsta: float):
-        self.name: str = name
-        self.structuretype: str = structuretype
-        self.startsta: float = startsta
-        self.endsta: float = endsta
+            Attributes:
+                name (str): 구조물 명칭
+                structuretype (str): 구조물 종류(교량/터널)
+                startsta(float): 시작 측점 m
+                endsta(float): 끝 측점 m
+            """
+    name: str
+    structuretype: str
+    startsta: float
+    endsta: float
 
     @property
     def length(self) -> float:
@@ -57,23 +61,54 @@ class Tunnel(Structure):
 
 
 class StructureCollection(list):
-    """구조물들을 컬렉션하는 클래스(리스트 상속)
-    Attributes:
-        structures (list): 구조물 명칭
+    """구조물들을 컬렉션하는 클래스(리스트 상속)"""
 
-    """
     def __init__(self):
         super().__init__()
-        self.structures: list[Structure] = []
 
     def get_by_type(self, structuretype: str) -> list[Structure]:
-        return [s for s in self.structures if s.structuretype == structuretype]
+        """구조물을 타입별로 얻기"""
+        return [s for s in self if s.structuretype == structuretype]
 
-    def find_containing(self, targetsta: float) -> Structure:
+    def find_containing(self, targetsta: float) -> Structure | None:
         """targetsta가 포함된 첫 번째 구조물을 반환"""
-        for s in self.structures:
+        for s in self:
             if s.isstructure(targetsta):
                 return s
+        return None  # 없을 경우 None 반환
 
     def all_structures(self) -> list[Structure]:
-        return self.structures
+        """모든 구조물 리스트 반환"""
+        return list(self)  # self 자체가 리스트이므로 그대로 반환
+
+    def get_structure_type_at(self, sta: float) -> str:
+        """
+        주어진 위치 sta가 교량, 터널, 토공인지 판별하는 메서드.
+
+        :param sta: 위치 (거리값)
+        :return: '교량', '터널', 또는 '토공'
+        """
+        try:
+            structure = self.find_containing(sta)
+            if structure:
+                return structure.structuretype
+
+        except Exception as ex:
+            logger.error(
+                f"structure lookup failed: {type(ex).__name__} - {ex} | sta={sta}")
+        return '토공'
+
+
+class StructureFactory:
+    """구조물 객체를 생성하는 팩토리 클래스"""
+    registry = {
+        '교량': Bridge,
+        '터널': Tunnel,
+    }
+
+    @classmethod
+    def create_structure(cls, structuretype: str, name: str, startsta: float, endsta: float) -> Structure:
+        """구조물 생성 팩토리메서드"""
+        if structuretype not in cls.registry:
+            raise ValueError(f"지원하지 않는 구조물 타입입니다: {structuretype}")
+        return cls.registry[structuretype](name, startsta, endsta)

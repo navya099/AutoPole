@@ -18,7 +18,6 @@ class WirePositionManager(BaseManager):
             jsonmanager (ConfigManager): json 입출력을 위한 클래스
             spandata (SpanDatabase): (외부json spandata 저장하기 위한 클래스)
             wiredata (WireDataManager): WireData
-            polyline_with_sta ( list[tuple[int, float, float, float]]): 측점 정보가 포함된 폴리선
             interpolatedata(CoordinateInterpolator): 폴리선에서 보간 좌표 계산을 위한 클래스
     """
 
@@ -27,8 +26,7 @@ class WirePositionManager(BaseManager):
         self.jsonmanager = ConfigManager(config_path)
         self.spandata = SpanDatabase(self.jsonmanager.get_config())
         self.wiredata = None
-        self.polyline_with_sta = [(i * 25, x, y, z) for i, (x, y, z) in enumerate(self.loader.coord_list)]
-        self.interpolatedata = CoordinateInterpolator(self.polyline_with_sta)
+        self.interpolatedata = CoordinateInterpolator(self.loader.bvealignment)
         logger.debug(f'WirePositionManager 초기화 완료')
 
     def run(self):
@@ -155,7 +153,7 @@ class WirePositionManager(BaseManager):
             self,
             wiredata: 'WireDataManager',
             i: int,
-            wire_type: list[str],
+            wire_type: str,
             spandata: 'SpanDatabase',
             pos: float,
             next_pos: float,

@@ -6,59 +6,6 @@ from typing import Literal, List, Tuple
 from utils.Vector3 import Vector3
 
 
-def validate_structure_list(structure_list: dict) -> bool:
-    """
-    입력 딕셔너리 리스트를 검증하는 유틸함수
-    :param structure_list:
-    :return: bool
-    """
-    if not isinstance(structure_list, dict):
-        raise TypeError("structure_list must be a dictionary.")
-
-    for key in ['bridge', 'tunnel']:
-        if key in structure_list:
-            value = structure_list[key]
-            if not isinstance(value, list):
-                raise TypeError(f"'{key}' must be a list of (start, end) tuples.")
-
-            for i, item in enumerate(value):
-                if not (isinstance(item, tuple) and len(item) == 2):
-                    raise TypeError(f"Item at index {i} in '{key}' must be a tuple with two elements.")
-
-                start, end = item
-                if not (isinstance(start, (int, float)) and isinstance(end, (int, float))):
-                    raise TypeError(f"Start and end values in '{key}[{i}]' must be int or float.")
-        return True
-
-
-def isbridge_tunnel(sta: float, structure_list: dict) -> Literal['교량', '터널', '토공']:
-    """
-    주어진 위치 sta가 교량, 터널, 또는 기본적으로 토공인지 판별하는 함수.
-
-    :param int sta: 위치 (거리값)
-    :param structure_list: dict {'bridge': [(start, end)], 'tunnel': [(start, end)]}
-    :return: str:'교량', '터널', 또는 '토공' 실패시에도 '토공' 반환
-    """
-    ...
-    try:
-        validate_structure_list(structure_list)
-
-        for start, end in structure_list.get('bridge', []):
-            if start <= sta <= end:
-                return '교량'
-
-        for start, end in structure_list.get('tunnel', []):
-            if start <= sta <= end:
-                return '터널'
-
-    except Exception as ex:
-
-        logger.error(
-            f"🚨 structure_list validation failed: {type(ex).__name__} - {ex} | sta={sta}")
-
-    return '토공'
-
-
 def check_isairjoint(input_sta, airjoint_list):
     for data in airjoint_list:
         sta, tag = data
@@ -70,33 +17,6 @@ def check_isairjoint(input_sta, airjoint_list):
 def get_block_index(current_track_position, block_interval=25):
     """현재 트랙 위치를 블록 인덱스로 변환"""
     return math.floor(current_track_position / block_interval + 0.001) * block_interval
-
-
-def iscurve(cur_sta, curve_list):
-    """sta가 곡선 구간에 해당하는지 구분하는 함수"""
-    rounded_sta = get_block_index(cur_sta)  # 25 단위로 반올림
-
-    for sta, R, c in curve_list:
-        if rounded_sta == sta:
-            if R == 0:
-                return '직선', 0, 0  # 반경이 0이면 직선
-            return '곡선', R, c  # 반경이 존재하면 곡선
-
-    return '직선', 0, 0  # 목록에 없으면 기본적으로 직선 처리
-
-
-def isslope(cur_sta, curve_list):
-    """sta가 곡선 구간에 해당하는지 구분하는 함수"""
-    rounded_sta = get_block_index(cur_sta)  # 25 단위로 반올림
-
-    for sta, g in curve_list:
-        if rounded_sta == sta:
-            if g == 0:
-                return '수평', 0  # 반경이 0이면 직선
-            else:
-                return '기울기', f'{g * 1000:.2f}'
-
-    return '수평', 0  # 목록에 없으면 기본적으로 직선 처리
 
 
 def find_last_block(data: str) -> int:
@@ -161,35 +81,42 @@ def get_mast_type(speed: int, current_structure: str) -> tuple[int, str]:
 class CoordinateInterpolator:
     """폴리선 보간 기능을 수행하는 유틸클래스
         Attributes:
-            polyline (List[Tuple[int, float, float, float]]): 측점 정보가 포함된 폴리선 리스트튜플
+            bvealignment (BVEAlignment): bve선형객체
             interpolate_coord (Vector3): 보간된 점의 좌표 Vector3
             origin_coord (Vector3): 보간된 점의 시작점 좌표 Vector3
             vector (float): 시작점의 방향벡터(각도)
     """
+    from geometry.alignment import BVEAlignment
 
-    def __init__(self, polyline: List[Tuple[int, float, float, float]]):
-        self.polyline = polyline
+    def __init__(self, bvealignment: BVEAlignment):
+        self.bvealignment = bvealignment
         self.interpolate_coord: Vector3 = Vector3.Zero()
         self.origin_coord: Vector3 = Vector3.Zero()
         self.vector: float = 0.0
+        self.interval = 25.0
 
     def cal_interpolate(self, target_sta: int):
         """
-        폴리선을 순회하여 보간점을 계산합니다.
+        BVEAlignment 내의 좌표리스트를 기반으로, 주어진 거리에서 보간 위치를 계산합니다.
+        self.interpolate_coord, self.origin_coord, self.vector를 설정합니다.
         """
-        for i in range(len(self.polyline) - 1):
-            sta1, x1, y1, z1 = self.polyline[i]
-            sta2, x2, y2, z2 = self.polyline[i + 1]
-            if sta1 <= target_sta < sta2:
-                t = target_sta - sta1
-                self.vector = calculate_bearing(x1, y1, x2, y2)
-                x, y = calculate_destination_coordinates(x1, y1, self.vector, t)
-                z = self.cal_interpolate_height(z1, z2, sta2 - sta1, t)
-                self.interpolate_coord = Vector3(x, y, z)
-                self.origin_coord = Vector3(x1, y1, z1)
-                return
+        current_index = self.bvealignment.get_index(target_sta)
+        next_index = current_index + 1
+        current_pos = self.bvealignment.get_coord_at_index(current_index)
+        next_pos = self.bvealignment.get_coord_at_index(next_index)
 
-        raise ValueError(f"STA {target_sta} is out of polyline range.")
+        if current_pos is None or next_pos is None:
+            logger.error(f"STA {target_sta} is out of polyline range.")
+            raise ValueError(f"STA {target_sta} is out of polyline range.")
+
+        current_sta = self.bvealignment.get_station_at_index(current_index)
+        next_sta = current_sta + 25
+        t = target_sta - current_sta
+        self.vector = calculate_bearing(current_pos.x, current_pos.y, next_pos.x, next_pos.y)
+        x, y = calculate_destination_coordinates(current_pos.x, current_pos.y, self.vector, t)
+        z = self.cal_interpolate_height(current_pos.z, next_pos.z, next_sta - current_sta, t)
+        self.interpolate_coord = Vector3(x, y, z)
+        self.origin_coord = current_pos
 
     def get_elevation_pos(self) -> float:
         """
@@ -328,7 +255,7 @@ def calculate_offset_point(vector: float, point_a: Vector3, offset_distance: flo
     else:
         vector += 90  # 좌측 오프셋
     offset_a_xy = calculate_destination_coordinates(point_a.x, point_a.y, vector, abs(offset_distance))
-    return Vector3(offset_a_xy[0],offset_a_xy[1], point_a.z)
+    return Vector3(offset_a_xy[0], offset_a_xy[1], point_a.z)
 
 
 def change_permile_to_degree(permile: float) -> float:

@@ -67,7 +67,17 @@ TypeError: unsupported operand type(s) for *: 'NoneType' and 'float'
 - databundle클래스로 전달
 
 ---
+## [1.0.5] - 2025-05-16
+### 📦 Structure: 리팩토링
+- structure , bvealignmnet 클래스를 생성
+- 기존의 튜플, 리스트, 딕셔너리 대신 사용 코드개선
+- 발견된 버그: 없음
+- 미해결 버그: 
+   dxf 출력시 list out of range
 
+
+
+---
 ## [예정 버전]
 
 ### [1.1.0] - (예정)

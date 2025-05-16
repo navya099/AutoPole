@@ -34,7 +34,6 @@ class DataBundle:
 class DataLoader:
     def __init__(self, databudle: DataBundle):
         self.databudle = databudle
-        self.last_block: int = 0
         self.bvealignment: BVEAlignment = BVEAlignment()
         self.structures: StructureCollection = StructureCollection()
         # ✅ 파일 로드 (빈 문자열 예외 처리 추가)
@@ -53,24 +52,24 @@ class DataLoader:
             self.txtprocessor.process_info(self.bvealignment, mode='curve')
         else:
 
-            logger.error("curve_info 파일 경로가 설정되지 않았습니다.")
+            logger.error("curve_info 파일 경로(databundle.curve_path)가 설정되지 않았습니다.")
 
         if self.databudle.pitch_path:
             self.txtprocessor.set_filepath(self.databudle.pitch_path)
             self.txtprocessor.read_file_content()
             self.txtprocessor.process_info(self.bvealignment, mode='pitch')
         else:
-            logger.error("pitch_info 파일 경로가 설정되지 않았습니다.")
+            logger.error("pitch_info 파일 경로(databundle.pitch_path)가 설정되지 않았습니다.")
 
         if self.databudle.coord_path:
             self.polylineprocessor.set_filepath(self.databudle.coord_path)
             self.polylineprocessor.convert_txt_to_polyline(self.bvealignment)
         else:
-            logger.error("coord_info 파일 경로가 설정되지 않았습니다.")
+            logger.error("coord_info 파일 경로(databundle.coord_path)가 설정되지 않았습니다.")
 
         if self.databudle.structure_path:
             self.excelprocessor.set_filepath(self.databudle.structure_path)
-            self.structures = self.excelprocessor.process_structure_data()
+            self.excelprocessor.process_structure_data(self.structures)
 
         else:
-            logger.error("structures 파일 경로가 설정되지 않았습니다.")
+            logger.error("structures 파일 경로(databundle.structure_path)가 설정되지 않았습니다.")

@@ -58,7 +58,9 @@ class PolePositionManager(BaseManager):
         모드에 따라 pole_positions을 생성하는 메소드
         """
         if self.loader.databudle.mode == 1:  # 새 노선용
-            self.pole_positions = self.distribute_pole_spacing_flexible(0.0, self.loader.end_km, spans=(45, 50, 55, 60))
+            self.pole_positions = self.distribute_pole_spacing_flexible(
+                self.loader.bvealignment.startkm, self.loader.bvealignment.endkm, spans=(45, 50, 55, 60)
+            )
             self.airjoint_list = self.define_airjoint_section(self.pole_positions)
             self.post_number_lst = self.generate_postnumbers(self.pole_positions)
             logger.info(f'전주 포지션 생성 완료\n pole_positions 갯수:{len(self.pole_positions)}\n,'
@@ -86,9 +88,13 @@ class PolePositionManager(BaseManager):
                     current_span = 0  # 현재 전주 span
 
                 # 현재 위치의 구조물 및 곡선 정보 가져오기
-                current_structure = isbridge_tunnel(pos, self.loader.struct_dic)
-                current_curve, r, c = iscurve(pos, self.loader.curve_list)  # 현재 전주 위치의 곡선
-                current_slope, pitch = isslope(pos, self.loader.pitch_list)  # 현재 전주 위치의 구배
+                current_structure = self.loader.structures.get_structure_type_at(pos)  # 현재 위치의 구조물
+                current_curve = self.loader.bvealignment.get_current_curve_string(pos)  # 현재 전주 위치의 곡선유뮤
+                current_radius = self.loader.bvealignment.get_curve_radius(pos)  # 현재 전주 위치의 곡선반경
+                current_cant = self.loader.bvealignment.get_curve_cant(pos)  # 현재 전주 위치의 캔트
+                current_slope = self.loader.bvealignment.get_current_pitch_string(pos)  # 현재 전주 위치의 구배유뮤
+                current_pitch = self.loader.bvealignment.get_pitch_permille(pos)  # 현재 전주 위치의 구배
+
                 current_airjoint = check_isairjoint(pos, self.airjoint_list)  # 현재 전주 위치의 AJ
                 post_number = find_post_number(self.post_number_lst, pos)  # 현재 전주넘버
 
@@ -97,9 +103,9 @@ class PolePositionManager(BaseManager):
                 data.poles[i].span = current_span
                 data.poles[i].current_structure = current_structure  # 현재 전주 위치의 구조물
                 data.poles[i].current_curve = current_curve
-                data.poles[i].radius = r
-                data.poles[i].cant = c
-                data.poles[i].pitch = pitch
+                data.poles[i].radius = current_radius
+                data.poles[i].cant = current_cant
+                data.poles[i].pitch = float(current_pitch)
                 data.poles[i].current_airjoint = current_airjoint
                 data.poles[i].post_number = post_number
                 if self.loader.databudle.poledirection == -1:
@@ -190,8 +196,8 @@ class PolePositionManager(BaseManager):
         if spans is None:
             spans = (45, 50, 55, 60)
 
-        start_m = int(start_km * 1000)  # km → m 변환
-        end_m = int(end_km * 1000)
+        start_m = int(start_km)  # km → m 변환
+        end_m = int(end_km)
 
         positions = [start_m]
         selected_spans = []
