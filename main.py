@@ -2,8 +2,8 @@
 BVE 자동 전주 설계 프로그램
 Made by dger
 
-📌 Ver 1.0.5
-
+📌 Ver 1.0.6
+2025.07.17 release
 ✅ 기능 요약:
 - 측점 기반 랜덤 전주 자동 배치
 - BVE용 CSV 출력 (전주, 전차선 포함)
@@ -14,7 +14,7 @@ from ui.main_gui import MainWindow
 
 
 def main():
-    app = MainWindow()
+    app = MainWindow(debug=True)
     app.mainloop()
 
 

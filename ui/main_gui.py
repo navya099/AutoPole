@@ -7,12 +7,13 @@ from core.core import MainProcess
 import threading
 import queue
 
-VERSION = "v1.0.4"
+VERSION = "v1.0.6"
 
 
 class MainWindow(tk.Tk):
-    def __init__(self):
+    def __init__(self, debug=False):
         super().__init__()
+        self.debug = debug  # 🔴 debug 인자 저장
         self.title("전주 처리 프로그램")
         self.geometry("500x200")
         self.wizard = None
@@ -32,7 +33,7 @@ class MainWindow(tk.Tk):
 
     def start_wizard(self):
         """새 작업 마법사 창 시작"""
-        self.wizard = TaskWizard(self)
+        self.wizard = TaskWizard(self, debug=self.debug)
         self.wizard.grab_set()  # 메인 창을 잠그고 마법사를 모달 창으로 설정
 
     def close_application(self):
@@ -41,8 +42,9 @@ class MainWindow(tk.Tk):
 
 
 class TaskWizard(tk.Toplevel):
-    def __init__(self, master):
+    def __init__(self, master, debug=False):
         super().__init__(master)
+        self.debug = debug  # 🔴 전달받은 debug 저장
         self.progress_bar = None
         self.progress_var = None
         self.queue = None
@@ -62,6 +64,7 @@ class TaskWizard(tk.Toplevel):
         self.pitch_info_path = None
         self.coord_info_path = None
         self.structure_path = None
+        logger.debug("[DEBUG MODE] 디버그 모드로 마법사 시작됨")
 
     def update_step(self):
         """현재 단계 UI 업데이트"""
@@ -148,20 +151,46 @@ class TaskWizard(tk.Toplevel):
 
     def select_file_paths(self):
         """Step 1: 파일 경로 선택"""
+
+        # 항상 초기화
+        self.file_paths = [tk.StringVar() for _ in range(4)]
+
+        if self.debug:
+            # 디버그 경로 자동 지정
+            default_paths = [
+                "C:/Temp/curve_info.txt",
+                "C:/Temp/pitch_info.txt",
+                "C:/Temp/bve_coordinates.txt",
+                "C:/Temp/구조물.xlsx"
+            ]
+            for i in range(4):
+                self.file_paths[i].set(default_paths[i])
+
+            self.curve_info_path = self.file_paths[0]
+            self.pitch_info_path = self.file_paths[1]
+            self.coord_info_path = self.file_paths[2]
+            self.structure_path = self.file_paths[3]
+
+            # 디버그 메시지 출력 (UI 위젯은 생략)
+            tk.Label(self, text="단계1(디버그 모드): 파일 자동 설정됨", font=("Arial", 14), fg="gray").pack(pady=10)
+            logger.debug("DEBUG 모드: 파일 경로 자동 지정 완료")
+            return  # UI 생성 생략
+
+        # 일반 모드: 수동 파일 선택 UI
         tk.Label(self, text="단계1: 파일 선택", font=("Arial", 14)).pack(pady=10)
 
-        file_tilte_list = [
+        file_titles = [
             'curve_info.txt',
             'pitch_info.txt',
             'bve_coordinates.txt',
             'structures.xlsx'
         ]
 
-        for i in range(len(file_tilte_list)):
+        for i, title in enumerate(file_titles):
             frame = tk.Frame(self)
             frame.pack(pady=5)
 
-            tk.Label(frame, text=f"{file_tilte_list[i]}:").pack(side="left")
+            tk.Label(frame, text=f"{title}:").pack(side="left")
             entry = tk.Entry(frame, width=40, textvariable=self.file_paths[i])
             entry.pack(side="left", padx=5)
             button = tk.Button(frame, text="열기", command=lambda i=i: self.browse_file(i))
@@ -190,20 +219,32 @@ class TaskWizard(tk.Toplevel):
         """Step 3: 입력값 받기"""
         tk.Label(self, text="Step 3: Enter Details", font=("Arial", 14)).pack(pady=10)
 
-        inputs_text_tilte = [
+        inputs_text_title = [
             '설계속도',
             '선로 갯수',
             '선로중심간격',
             '폴 방향',
         ]
 
-        for i in range(len(inputs_text_tilte)):
+        # 콤보박스로 대체할 값 목록 (예시)
+        combo_options = {
+            0: ['150', '250', '350'],  # 설계속도
+            3: ['-1', '1'],  # 폴 방향
+        }
+
+        for i, label in enumerate(inputs_text_title):
             frame = tk.Frame(self)
             frame.pack(pady=5)
 
-            tk.Label(frame, text=f"{inputs_text_tilte[i]}:").pack(side="left")
-            entry = tk.Entry(frame, textvariable=self.inputs[i])  # textvariable로 inputs[i] 바인딩
-            entry.pack(side="left", padx=5)
+            tk.Label(frame, text=f"{label}:").pack(side="left")
+
+            if i in combo_options:
+                combobox = ttk.Combobox(frame, textvariable=self.inputs[i], values=combo_options[i], state="readonly")
+                combobox.pack(side="left", padx=5)
+                combobox.current(0)  # 기본 선택값 설정
+            else:
+                entry = tk.Entry(frame, textvariable=self.inputs[i])
+                entry.pack(side="left", padx=5)
 
     def validate_inputs(self):
         """입력값 유효성 검사"""
@@ -215,10 +256,14 @@ class TaskWizard(tk.Toplevel):
                 if not value.isdigit():  # 숫자가 아닌 경우
                     messagebox.showerror("입력 오류", "설계속도는 숫자만 입력할 수 있습니다.")
                     return False  # 유효성 검사 실패
-                if int(value) <= 0:  # 음수나 0은 불가능
+                speed = int(value)
+                if speed <= 0:
                     messagebox.showerror("입력 오류", "설계속도는 0보다 큰 값이어야 합니다.")
-                    return False  # 유효성 검사 실패
+                    return False
 
+                if speed not in [150, 250, 350]:
+                    messagebox.showerror("입력 오류", "설계속도는 150, 250, 350 중 하나여야 합니다.")
+                    return False
             elif i == 1:  # '선로 갯수'
                 if not value.isdigit():
                     messagebox.showerror("입력 오류", "선로 갯수는 숫자만 입력할 수 있습니다.")

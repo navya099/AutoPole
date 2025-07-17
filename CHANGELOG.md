@@ -75,6 +75,14 @@ TypeError: unsupported operand type(s) for *: 'NoneType' and 'float'
 - 미해결 버그: 
    dxf 출력시 list out of range
 
+---
+## [1.0.6] - 2025-07-17
+### 📦 Structure: 리팩토링
+- 디버그 모드 자동 파일 경로 설정 기능 추가
+- GUI 단계 분기 구조 개선 및 사용자 편의성 향상
+
+### 🐞 Fixed: 버그 수정
+- dxf 평면도 출력시 마지막 인덱스 범위 에러 수정
 
 
 ---

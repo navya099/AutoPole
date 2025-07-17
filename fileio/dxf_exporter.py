@@ -50,7 +50,7 @@ class DxfManager:
         self.create_alignmnet()  # 선형 작성
         char_height = self.h_scale * 3
 
-        for i in range(len(data.poles) - 1):
+        for i in range(len(wiredata.wires) - 1):
             try:
                 pos_coord = data.poles[i].coord  # 3차원좌표
                 next_pos_coord = data.poles[i + 1].coord  # 다음 전주 좌표
@@ -175,6 +175,9 @@ class DxfManager:
         """
 
         polyline_points = [(pole.coord.x, pole.coord.y) for pole in self.poledata.poles]
+        if polyline_points[0] == polyline_points[-1]:
+            polyline_points = polyline_points[:-1]  # 마지막 점 제거
+
         self.msp.add_lwpolyline(polyline_points, close=False, dxfattribs={'layer': '선형', 'color': 1})
 
     def create_new_dxf(self):
