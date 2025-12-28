@@ -1,16 +1,17 @@
 from core.POLE.poledata import PoleDATA
+from core.POLE.polegroup import PoleGroup
 
 
 class PoleDATAManager:
     """PoleDATA 관리 클래스"""
 
     def __init__(self):
-        self.poles: list[PoleDATA] = []
+        self.groups: list[PoleGroup] = []
 
-    def new_pole(self) -> PoleDATA:
-        pole = PoleDATA()
-        self.poles.append(pole)
-        return pole
+    def new_group(self, pos: int) -> PoleGroup:
+        group = PoleGroup(pos)
+        self.groups.append(group)
+        return group
 
     def count(self) -> int:
         return len(self.poles)
@@ -23,3 +24,8 @@ class PoleDATAManager:
 
     def __iter__(self):
         return iter(self.poles)
+
+    @property
+    def poles(self) -> list[PoleDATA]:
+        """기존 Manager들과 호환용"""
+        return [p for g in self.groups for p in g.poles]
