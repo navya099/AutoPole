@@ -1,7 +1,8 @@
+from core.BRACKET.bracket_specs import BracketSpec
 from core.BRACKET.bracketdata import BracketElement
 from core.FEEDER.feederdata import FeederDATA
 from core.MAST.mastdata import MastDATA
-from utils import Vector3
+from utils.Vector3 import Vector3
 from utils.util import Direction
 class PoleDATA:
     """
@@ -11,6 +12,8 @@ class PoleDATA:
             mast (MastDATA): 기둥 요소
             brackets (list[BracketElement]): 브래킷 목록
             feeder (FeederDATA): 급전선 설비
+
+            track_index: 선로번호
             pos (float): 전주 위치 (station)
             post_number (str): 전주 번호
             current_curve (str): 현재 평면선형 직곡선상태(직선/곡선)
@@ -31,6 +34,7 @@ class PoleDATA:
         self.brackets: list[BracketElement] = []
         self.feeder: FeederDATA | None = None
 
+        self.track_index: int = 0
         self.pos: float = 0.0
         self.post_number: str = ''
         self.current_curve: str = ''
@@ -48,3 +52,14 @@ class PoleDATA:
 
         self.direction: Direction = Direction.LEFT
         self.vector: float = 0.0
+
+    def apply_bracket(self, spec: BracketSpec):
+        bracket = BracketElement()
+        bracket.element_type = spec.element_type
+        bracket.name = spec.name
+        bracket.index = spec.index
+        bracket.direction = spec.direction
+
+        self.brackets.clear()
+        self.brackets.append(bracket)
+        self.gauge = spec.gauge
