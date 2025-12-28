@@ -1,8 +1,10 @@
 from fileio.dxf_exporter import DxfManager
-from .brackets import BracketManager
-from .pole import *
 from fileio.dataloader import *
 from fileio.bve_exporter import *
+from .BRACKET.bracket_manager import BracketManager
+from .FEEDER.feeder_manager import FeederManager
+from .MAST.mast_manager import MastManager
+from .POLE.pole_positioner import PolePositionManager
 from .wire import WirePositionManager
 
 
