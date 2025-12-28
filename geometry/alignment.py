@@ -120,10 +120,13 @@ class BVEAlignment:
         curve = self.get_curve_at(target_sta)
         return curve.cant if curve else 0.0
 
-    @staticmethod
-    def get_index(target_sta: int) -> int:
-        """타겟 측점에 해당하는 인덱스 반환"""
-        return target_sta // 25
+    def get_index(self, target_sta: float) -> int:
+        start = self.curves[0].startsta  # 실제 데이터의 시작 station
+        step = self.curves[1].startsta - self.curves[0].startsta  # 샘플링 간격 (보통 25m)
+
+        offset = target_sta - start
+        index = int(offset // step)
+        return index
 
     def get_station_at_index(self, index: int) -> float:
         """인덱스에 해당하는 측점 반환"""
