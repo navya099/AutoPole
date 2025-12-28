@@ -6,12 +6,7 @@ from typing import Literal, List, Tuple
 from utils.Vector3 import Vector3
 
 
-def check_isairjoint(input_sta, airjoint_list):
-    for data in airjoint_list:
-        sta, tag = data
-        if input_sta == sta:
-            return tag
-    return '일반개소'
+
 
 
 def get_block_index(current_track_position, block_interval=25):
@@ -37,10 +32,7 @@ def find_last_block(data: str) -> int:
         raise ValueError(f"마지막 블록 값을 파싱하는 중 오류 발생: {e}")
 
 
-def find_post_number(lst, pos):
-    for arg in lst:
-        if arg[0] == pos:
-            return arg[1]
+
 
 
 def buffered_write(filename, lines):
