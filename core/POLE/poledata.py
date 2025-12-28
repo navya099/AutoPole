@@ -53,13 +53,13 @@ class PoleDATA:
         self.direction: Direction = Direction.LEFT
         self.vector: float = 0.0
 
-    def apply_bracket(self, spec: BracketSpec):
-        bracket = BracketElement()
-        bracket.element_type = spec.element_type
-        bracket.name = spec.name
-        bracket.index = spec.index
-        bracket.direction = spec.direction
-
+    def apply_bracket(self, specs: list[BracketSpec]):
         self.brackets.clear()
-        self.brackets.append(bracket)
-        self.gauge = spec.gauge
+
+        for spec in specs:
+            bracket = BracketElement()
+            bracket.element_type = spec.element_type
+            bracket.name = spec.name
+            bracket.index = spec.index
+            bracket.direction = spec.direction
+            self.brackets.append(bracket)
