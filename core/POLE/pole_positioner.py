@@ -46,7 +46,8 @@ class PolePositionManager(BaseManager):
         data = PoleDATAManager()
         builder = PoleBuilder(self.loader)
 
-        direction = (
+        track_count = self.loader.databudle.linecount
+        base_direction = (
             Direction.LEFT if self.loader.databudle.poledirection == -1
             else Direction.RIGHT
         )
@@ -57,22 +58,29 @@ class PolePositionManager(BaseManager):
                     self.pole_positions[i + 1] - pos
                     if i < len(self.pole_positions) - 1 else 0
                 )
+                group = data.new_group(pos)
 
-                pole = data.new_pole()
+                for track_idx in range(track_count):
+                    pole = PoleDATA()
+                    pole.track_index = track_idx  # ★ 중요
+                    pole.track_offset = self.loader.databudle.lineoffset
 
-                builder.build(
-                    pole,
-                    pos,
-                    span,
-                    self.airjoint_list,
-                    self.post_number_lst,
-                    direction
-                )
+                    direction = (base_direction if track_idx == 0 else Direction.opposite(base_direction))
 
+                    builder.build(
+                        pole,
+                        pos,
+                        span,
+                        self.airjoint_list,
+                        self.post_number_lst,
+                        direction
+                    )
+
+                    group.add_pole(pole)
             except Exception:
                 logger.exception(f"create_pole 실패 (index={i}, pos={pos})")
 
-        self.poledata = data if data.poles else None
+        self.poledata = data if data.groups else None
 
     def _generate_auto(self):
 
