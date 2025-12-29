@@ -1,21 +1,28 @@
 from core.AIRJOINT.airjoint_manager import AirjointManager
+from core.POLE.pole_refdata import PoleRefData
 from core.POLE.pole_utils import PoleUtils
-from core.POLE.poledata import PoleDATA
+from geometryor.interpolator import CoordinateInterpolator
+
+from point3d import Point3d
 
 
-class PoleBuilder:
+class PolePositionBuilder:
     def __init__(self, loader):
         self.loader = loader
-
-    def build(self, pole: PoleDATA, pos: int, span: int,
-              airjoint_list, post_number_lst, direction):
+        self.intpoler = CoordinateInterpolator(self.loader.bvealignment)
+    def build(self, pos: int, span: int):
+        pole = PoleRefData()
         pole.pos = pos
         pole.span = span
-        pole.current_structure = self.loader.structures.get_structure_type_at(pos)
-        pole.current_curve = self.loader.bvealignment.get_current_curve_string(pos)
+        pole.structure_type = self.loader.structures.get_structure_type_at(pos)
+        pole.curve_type = self.loader.bvealignment.get_current_curve_string(pos)
         pole.radius = float(self.loader.bvealignment.get_curve_radius(pos))
         pole.cant = float(self.loader.bvealignment.get_curve_cant(pos))
         pole.pitch = float(self.loader.bvealignment.get_pitch_permille(pos))
-        pole.current_airjoint = AirjointManager.check_isairjoint(pos, airjoint_list)
-        pole.post_number = PoleUtils.find_post_number(post_number_lst, pos)
-        pole.direction = direction
+
+        self.intpoler.cal_interpolate(pos)
+        center_coord = self.intpoler.get_pos_coord()
+        pole.center_coord = Point3d(center_coord.x, center_coord.y, center_coord.z)
+        pole.azimuth = self.intpoler.get_vector()
+
+        return pole
