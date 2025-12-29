@@ -268,3 +268,6 @@ def calculate_slope(h1: float, h2: float, gauge: float) -> float:
 class Direction(Enum):
     LEFT = -1
     RIGHT = 1
+
+    def opposite(self):
+        return Direction.RIGHT if self is Direction.LEFT else Direction.LEFT
