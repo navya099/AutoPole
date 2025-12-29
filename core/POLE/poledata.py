@@ -1,5 +1,6 @@
 from core.BRACKET.bracket_specs import BracketSpec
 from core.BRACKET.bracketdata import BracketElement
+from core.FEEDER.feeder_spec import FeederSpec
 from core.FEEDER.feederdata import FeederDATA
 from core.MAST.mastdata import MastDATA
 from utils.Vector3 import Vector3
@@ -11,7 +12,7 @@ class PoleDATA:
         Attributes:
             mast (MastDATA): 기둥 요소
             brackets (list[BracketElement]): 브래킷 목록
-            feeder (FeederDATA): 급전선 설비
+            feeders (FeederDATA): 급전선 설비들
 
             track_index: 선로번호
             pos (float): 전주 위치 (station)
@@ -30,9 +31,9 @@ class PoleDATA:
             vector (float): 벡터 각도 2D
     """
     def __init__(self):
-        self.mast: MastDATA | None = None
+        self.masts: list[MastDATA] = []
         self.brackets: list[BracketElement] = []
-        self.feeder: FeederDATA | None = None
+        self.feeders: list[FeederDATA] =  []
 
         self.track_index: int = 0
         self.pos: float = 0.0
@@ -63,3 +64,14 @@ class PoleDATA:
             bracket.index = spec.index
             bracket.direction = spec.direction
             self.brackets.append(bracket)
+
+    def apply_feeder(self, specs: list[FeederSpec]):
+        self.feeders.clear()
+        for spec in specs:
+            feeder = FeederDATA()
+            feeder.index = spec.index
+            feeder.name = spec.name
+            feeder.direction = spec.direction
+            feeder.positionx = spec.offset
+            self.feeders.append(feeder)
+
