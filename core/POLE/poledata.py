@@ -2,6 +2,7 @@ from core.BRACKET.bracket_specs import BracketSpec
 from core.BRACKET.bracketdata import BracketElement
 from core.FEEDER.feeder_spec import FeederSpec
 from core.FEEDER.feederdata import FeederDATA
+from core.MAST.mast_spec import MastSpec
 from core.MAST.mastdata import MastDATA
 from utils.Vector3 import Vector3
 from utils.util import Direction
@@ -10,7 +11,7 @@ class PoleDATA:
         전주 설비 전체를 나타내는 데이터 구조
         기둥 브래킷 금구류 포함 데이터
         Attributes:
-            mast (MastDATA): 기둥 요소
+            masts (MastDATA): 기둥 요소
             brackets (list[BracketElement]): 브래킷 목록
             feeders (FeederDATA): 급전선 설비들
 
@@ -74,4 +75,14 @@ class PoleDATA:
             feeder.direction = spec.direction
             feeder.positionx = spec.offset
             self.feeders.append(feeder)
+
+    def apply_mast(self, specs: list[MastSpec]):
+        self.masts.clear()
+        for spec in specs:
+            mast = MastDATA()
+            mast.index = spec.index
+            mast.name = spec.name
+            mast.direction = spec.direction
+            self.masts.append(mast)
+
 
