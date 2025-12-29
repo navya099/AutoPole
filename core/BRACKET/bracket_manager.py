@@ -15,6 +15,7 @@ class BracketManager(BaseManager):
 
     def run(self):
         self.create_bracket()
+        logger.debug(f'Bracket생성 완료')
 
     def create_bracket(self):
         policy = BracketPolicy()
