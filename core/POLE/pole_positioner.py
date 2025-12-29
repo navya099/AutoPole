@@ -1,15 +1,12 @@
 from core.AIRJOINT.airjoint_manager import AirjointManager
 from core.POLE.pole_file_source import PoleFileSource
-from core.POLE.pole_processor import PoleBuilder
+from core.POLE.pole_processor import PolePositionBuilder
 from core.POLE.pole_utils import PoleUtils
-from core.POLE.poledata import PoleDATA
-from core.POLE.poledata_manager import PoleDATAManager
 from core.base_manager import BaseManager
 from utils.logger import logger
-from utils.util import Direction
 
 class PolePositionManager(BaseManager):
-    """전주 생성기능을 관리하는 클래스
+    """전주 위치데이터를 생성 관리하는 클래스
 
     Attributes:
         pole_positions (list): 전주 위치 데이터
@@ -28,7 +25,7 @@ class PolePositionManager(BaseManager):
 
     def run(self):
         self.generate_positions()
-        self.create_pole()
+        self.polerefdata = self.create_geometry_info()
 
     def generate_positions(self):
         if self.loader.databudle.mode == 1:
@@ -41,47 +38,23 @@ class PolePositionManager(BaseManager):
             f"airjoints={len(self.airjoint_list)}, "
             f"post_numbers={len(self.post_number_lst)}"
         )
-
-    def create_pole(self):
-        data = PoleDATAManager()
-        builder = PoleBuilder(self.loader)
-
-        track_count = self.loader.databudle.linecount
-        base_direction = (
-            Direction.LEFT if self.loader.databudle.poledirection == -1
-            else Direction.RIGHT
-        )
-
+    def create_geometry_info(self):
+        """기초 지오메트리 생성 메서드"""
+        polerefdatas = []
+        builder = PolePositionBuilder(self.loader)
         for i, pos in enumerate(self.pole_positions):
             try:
                 span = (
                     self.pole_positions[i + 1] - pos
                     if i < len(self.pole_positions) - 1 else 0
                 )
-                group = data.new_group(pos)
+                polerefdata = builder.build(pos, span)
+                polerefdatas.append(polerefdata)
 
-                for track_idx in range(track_count):
-                    pole = PoleDATA()
-                    pole.track_index = track_idx  # ★ 중요
-                    pole.track_offset = self.loader.databudle.lineoffset
-
-                    direction = (base_direction if track_idx == 0 else Direction.opposite(base_direction))
-
-                    builder.build(
-                        pole,
-                        pos,
-                        span,
-                        self.airjoint_list,
-                        self.post_number_lst,
-                        direction
-                    )
-
-                    group.add_pole(pole)
             except Exception:
-                logger.exception(f"create_pole 실패 (index={i}, pos={pos})")
+                logger.exception(f"지오메트리 생성 실패 (index={i}, pos={pos})")
 
-        self.poledata = data if data.groups else None
-
+        return polerefdatas
     def _generate_auto(self):
 
         """자동 포지션 생성 메소드 """
