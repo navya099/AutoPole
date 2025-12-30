@@ -3,6 +3,7 @@ from core.POLE.pole_file_source import PoleFileSource
 from core.POLE.pole_processor import PolePositionBuilder
 from core.POLE.pole_utils import PoleUtils
 from core.base_manager import BaseManager
+from fileio.jsonexporter import JsonExporter
 from utils.logger import logger
 
 class PolePositionManager(BaseManager):
@@ -38,23 +39,37 @@ class PolePositionManager(BaseManager):
             f"airjoints={len(self.airjoint_list)}, "
             f"post_numbers={len(self.post_number_lst)}"
         )
+
     def create_geometry_info(self):
         """기초 지오메트리 생성 메서드"""
         polerefdatas = []
         builder = PolePositionBuilder(self.loader)
+
         for i, pos in enumerate(self.pole_positions):
+            span = (
+                self.pole_positions[i + 1] - pos
+                if i < len(self.pole_positions) - 1 else 0
+            )
+
             try:
-                span = (
-                    self.pole_positions[i + 1] - pos
-                    if i < len(self.pole_positions) - 1 else 0
-                )
                 polerefdata = builder.build(pos, span)
                 polerefdatas.append(polerefdata)
 
+            except ValueError as e:
+                # 좌표 범위 초과 → 정상 종료
+                logger.info(
+                    f"전주 지오메트리 생성 종료 (index={i}, pos={pos}): {e}"
+                )
+                break
+
             except Exception:
-                logger.exception(f"지오메트리 생성 실패 (index={i}, pos={pos})")
+                # 진짜 버그
+                logger.exception(
+                    f"지오메트리 생성 실패 (index={i}, pos={pos})"
+                )
 
         return polerefdatas
+
     def _generate_auto(self):
 
         """자동 포지션 생성 메소드 """
