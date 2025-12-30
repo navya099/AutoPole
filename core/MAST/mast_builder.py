@@ -16,7 +16,7 @@ class MastBuilder:
             if track_idx == 0
             else Direction.opposite(base_direction)
         )
-        pole.coord = ref.center_coord
+        pole.coord = ref.center_coord.copy()
 
         #전주고유속성계산
         pole.gauge = SectionRule.get_gauge(ref.structure_type)#건식게이지
