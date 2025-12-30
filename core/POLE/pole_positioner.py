@@ -3,7 +3,6 @@ from core.POLE.pole_file_source import PoleFileSource
 from core.POLE.pole_processor import PolePositionBuilder
 from core.POLE.pole_utils import PoleUtils
 from core.base_manager import BaseManager
-from fileio.jsonexporter import JsonExporter
 from utils.logger import logger
 
 class PolePositionManager(BaseManager):
