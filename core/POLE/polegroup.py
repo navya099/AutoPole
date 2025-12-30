@@ -19,3 +19,6 @@ class PoleGroup:
             )
         self.poles[trackidx] = pole
 
+    def __iter__(self):
+        return iter(self.poles.values())
+
