@@ -1,11 +1,13 @@
 from fileio.dxf_exporter import DxfManager
 from fileio.dataloader import *
 from fileio.bve_exporter import *
+from fileio.jsonexporter import JsonExporter
 from .BRACKET.bracket_manager import BracketManager
 from .FEEDER.feeder_manager import FeederManager
 from .MAST.mast_manager import MastManager
+from .POLE.pole_place_manger import PolePlaceDATAManager
 from .POLE.pole_positioner import PolePositionManager
-from .wire import WirePositionManager
+from .WIRE.wire_manager import WirePositionManager
 
 
 class MainProcess:
@@ -31,13 +33,15 @@ class MainProcess:
         self.steps = [
             ("📦 데이터 로딩 중...", self.load_data),
             ("📍 전주 배치 계산 중...", self.calc_pole),
+            ("📐 마스트 배치 중...", self.place_mast),]
+        """
             ("🪛 브래킷 설치 중...", self.install_bracket),
-            ("🪛 급전선 설치 중...", self.install_feeder),
-            ("📐 마스트 배치 중...", self.place_mast),
+            ("🪛 급전선 설비 설치 중...", self.install_feeder),
             ("⚡ 와이어 배선 중...", self.route_wire),
             ("📝 CSV 내보내는 중...", self.export_csv),
             ("📝 도면 내보내는 중...", self.export_dxf)
         ]
+        """
         total_steps = len(self.steps)
 
         try:
@@ -57,14 +61,24 @@ class MainProcess:
     def calc_pole(self):
         self.pole_processor = PolePositionManager(self.loader)
         self.pole_processor.run()
-
-    def install_bracket(self):
-        self.bracket_manager = BracketManager(self.loader, self.pole_processor.poledata)
-        self.bracket_manager.run()
+        jso = JsonExporter()
+        jso.export_polerefdata(polerefdatas=self.pole_processor.polerefdata, path="c:/temp/polerefdata.json")
 
     def place_mast(self):
-        self.mastmanager = MastManager(self.loader, self.pole_processor.poledata)
-        self.mastmanager.run()
+        self.pole_place_processor = PolePlaceDATAManager(
+            self.loader,
+            self.pole_processor.polerefdata
+        )
+        self.pole_place_processor.run()
+        self.mast_processor = MastManager(self.loader, self.pole_place_processor.poledatas)
+        self.mast_processor.run()
+
+        jso = JsonExporter()
+        jso.export_polegroups(polegroup_manager=self.mast_processor.collecton, path="c:/temp/polegroups.json")
+    """
+    def install_bracket(self):
+        self.bracket_manager = BracketManager(self.loader, self.pole_processor.polerefdata)
+        self.bracket_manager.run()
 
     def install_feeder(self):
         self.feedermanager = FeederManager(self.loader, self.pole_processor.poledata)
@@ -85,3 +99,4 @@ class MainProcess:
         self.dxfmanager = DxfManager(self.pole_processor.poledata, self.wiremanager.wiredata)
         self.dxfmanager.run()
 
+    """
