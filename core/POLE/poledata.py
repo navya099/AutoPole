@@ -3,9 +3,10 @@ from core.BRACKET.bracketdata import BracketElement
 from core.FEEDER.feeder_spec import FeederSpec
 from core.FEEDER.feederdata import FeederDATA
 from core.MAST.mast_spec import MastSpec
-from core.MAST.mastdata import MastDATA
+from core.MAST.mastdata import MastDesign
+from core.POLE.pole_refdata import PoleRefData
 from point3d import Point3d
-from dataclasses import field
+
 from utils.util import Direction
 class PolePlaceDATA:
     """
@@ -26,10 +27,10 @@ class PolePlaceDATA:
             direction: 설치방향
     """
     def __init__(self):
-        self.masts: list[MastDATA] = []
+        self.masts: list[MastDesign] = []
         self.brackets: list[BracketElement] = []
         self.feeders: list[FeederDATA] =  []
-
+        self.ref: PoleRefData | None = None
         self.track_index: int = 0
         self.pos: float = 0.0
         self.post_number: str = ''
@@ -65,8 +66,8 @@ class PolePlaceDATA:
     def apply_mast(self, specs: list[MastSpec]):
         self.masts.clear()
         for spec in specs:
-            mast = MastDATA()
-            mast.index = spec.index
+            mast = MastDesign()
+            mast.code = spec.index
             mast.direction = spec.direction
             self.masts.append(mast)
 
