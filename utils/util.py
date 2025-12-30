@@ -51,13 +51,13 @@ def calculate_bearing(x1: float, y1: float, x2: float, y2: float) -> float:
     # Calculate the bearing (direction) between two points in Cartesian coordinates
     dx = x2 - x1
     dy = y2 - y1
-    bearing = math.degrees(math.atan2(dy, dx))
+    bearing = math.atan2(dy, dx)
     return bearing
 
 
 def calculate_destination_coordinates(x1: float, y1: float, bearing: float, distance: float) -> tuple[float, float]:
     # Calculate the destination coordinates given a starting point, bearing, and distance in Cartesian coordinates
-    angle = math.radians(bearing)
+    angle = bearing
     x2 = x1 + distance * math.cos(angle)
     y2 = y1 + distance * math.sin(angle)
     return x2, y2
