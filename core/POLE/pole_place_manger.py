@@ -1,3 +1,4 @@
+from core.POLE.pole_file_source import PoleFileSource
 from core.POLE.polegroup_collector import PoleGroupCollection
 from core.POLE.poleplace_builder import PolePlaceBuilder
 from core.base_manager import BaseManager
@@ -12,6 +13,10 @@ class PolePlaceDATAManager(BaseManager):
 
 
     def run(self):
+        self.excute_polerefdata_builder()
+        self.apply_post_number_strategy()
+
+    def excute_polerefdata_builder(self):
         track_count = self.loader.databudle.linecount
 
         base_direction = (
@@ -34,3 +39,21 @@ class PolePlaceDATAManager(BaseManager):
                     logger.exception(
                         f"Pole 생성 실패 (pos={ref.pos}, track={track_idx})"
                     )
+
+    def apply_post_number_strategy(self):
+        if self.loader.databudle.mode == 1:
+            # 자동 생성
+            self._apply_auto_post_numbers()
+        else:
+            # 외부 데이터 사용
+            self._apply_external_post_numbers(PoleFileSource())
+
+    def _apply_auto_post_numbers(self):
+        self.poledatas.update_post_numbers()
+
+    def _apply_external_post_numbers(self, source):
+
+        data = source.load()
+        self.post_number_lst = data.post_numbers
+
+

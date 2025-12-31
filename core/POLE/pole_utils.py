@@ -2,22 +2,26 @@ import random
 
 class PoleUtils:
     @staticmethod
-    def generate_postnumbers(lst: list[int]) -> list[tuple[int, str]]:
-        postnumbers = []
-        prev_km = -1
+    def generate_postnumbers(positions: list[int]) -> dict[int, str]:
+        """
+        pos → post_number 매핑 생성
+        """
+        result = {}
+        prev_km = None
         count = 0
 
-        for number in lst:
-            km = number // 1000  # 1000으로 나눈 몫이 같은 구간
+        for pos in sorted(positions):
+            km = pos // 1000
+
             if km == prev_km:
-                count += 1  # 같은 구간에서 숫자 증가
+                count += 1
             else:
                 prev_km = km
-                count = 1  # 새로운 구간이므로 count를 0으로 초기화
+                count = 1
 
-            postnumbers.append((number, f'{km}-{count}'))
+            result[pos] = f"{km}-{count}"
 
-        return postnumbers
+        return result
 
     @staticmethod
     def distribute_pole_spacing_flexible(

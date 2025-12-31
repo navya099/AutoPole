@@ -20,8 +20,6 @@ class PoleFileSource:
 
         return PolePositionSet(
             positions=df['측점'].tolist(),
-            post_numbers=list(zip(df['측점'], df['전주번호'])),
-            post_types=list(zip(df['측점'], df['타입'])),
             airjoints=[
                 (row['측점'], row['에어조인트'])
                 for _, row in df.iterrows()

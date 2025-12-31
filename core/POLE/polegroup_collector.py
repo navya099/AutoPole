@@ -1,3 +1,4 @@
+from core.POLE.pole_utils import PoleUtils
 from core.POLE.polegroup import PoleGroup
 
 class PoleGroupCollection:
@@ -17,3 +18,16 @@ class PoleGroupCollection:
     def iter_poles(self):
         for group in self:
             yield from group
+
+    def update_post_numbers(self):
+        positions = [group.pos for group in self.groups]
+
+        post_number_map = PoleUtils.generate_postnumbers(positions)
+
+        for group in self.groups:
+            post_number = post_number_map.get(group.pos)
+            if not post_number:
+                continue
+
+            for pole in group:
+                pole.post_number = post_number

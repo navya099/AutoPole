@@ -56,10 +56,9 @@ class PolePlaceDATA:
         self.feeders.clear()
         for spec in specs:
             feeder = FeederDATA()
-            feeder.index = spec.index
+            feeder.code = spec.index
             feeder.name = spec.name
             feeder.direction = spec.direction
-            feeder.positionx = spec.offset
             self.feeders.append(feeder)
 
     def apply_mast(self, specs: list[MastSpec]):

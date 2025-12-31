@@ -10,6 +10,7 @@ class PolePlaceBuilder:
         pole.pos = ref.pos
         pole.span = ref.span
         pole.ref = ref
+        pole.current_section =ref.section_info
         pole.direction = (
             base_direction
             if track_idx == 0
