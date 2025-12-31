@@ -33,10 +33,10 @@ class MainProcess:
         self.steps = [
             ("📦 데이터 로딩 중...", self.load_data),
             ("📍 전주 배치 계산 중...", self.calc_pole),
-            ("📐 마스트 배치 중...", self.place_mast),]
-        """
+            ("📐 마스트 배치 중...", self.place_mast),
             ("🪛 브래킷 설치 중...", self.install_bracket),
-            ("🪛 급전선 설비 설치 중...", self.install_feeder),
+            ("🪛 급전선 설비 설치 중...", self.install_feeder)]
+        """
             ("⚡ 와이어 배선 중...", self.route_wire),
             ("📝 CSV 내보내는 중...", self.export_csv),
             ("📝 도면 내보내는 중...", self.export_dxf)
@@ -65,25 +65,23 @@ class MainProcess:
         jso.export_polerefdata(polerefdatas=self.pole_processor.polerefdata, path="c:/temp/polerefdata.json")
 
     def place_mast(self):
-        self.pole_place_processor = PolePlaceDATAManager(
-            self.loader,
-            self.pole_processor.polerefdata
-        )
+        self.pole_place_processor = PolePlaceDATAManager(self.loader,self.pole_processor.polerefdata)
         self.pole_place_processor.run()
         self.mast_processor = MastManager(self.loader, self.pole_place_processor.poledatas)
         self.mast_processor.run()
 
-        jso = JsonExporter()
-        jso.export_polegroups(polegroup_manager=self.mast_processor.collecton, path="c:/temp/polegroups.json")
-    """
+
     def install_bracket(self):
-        self.bracket_manager = BracketManager(self.loader, self.pole_processor.polerefdata)
+        self.bracket_manager = BracketManager(self.loader, self.mast_processor.collection)
         self.bracket_manager.run()
 
     def install_feeder(self):
-        self.feedermanager = FeederManager(self.loader, self.pole_processor.poledata)
+        self.feedermanager = FeederManager(self.loader, self.bracket_manager.collection)
         self.feedermanager.run()
+        jso = JsonExporter()
+        jso.export_polegroups(polegroup_manager=self.feedermanager.collection, path="c:/temp/polegroups.json")
 
+    """
     def route_wire(self):
         self.wiremanager = WirePositionManager(self.loader, self.pole_processor.poledata)
         self.wiremanager.run()
