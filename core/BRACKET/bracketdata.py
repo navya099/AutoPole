@@ -1,10 +1,9 @@
-from core.element import Element
+from core.design_element import DesignElement
 
 
-class BracketElement(Element):
+class BracketDesign(DesignElement):
+    """브래킷 설계 정보
+        Attributes:
     """
-    브래킷 요소 Element상속
-    """
-
     def __init__(self):
         super().__init__()
