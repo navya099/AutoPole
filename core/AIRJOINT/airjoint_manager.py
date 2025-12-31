@@ -56,11 +56,3 @@ class AirjointManager:
                 i += 1
 
         return airjoint_list
-
-    @staticmethod
-    def check_isairjoint(input_sta, airjoint_list):
-        for data in airjoint_list:
-            sta, tag = data
-            if input_sta == sta:
-                return tag
-        return '일반개소'
