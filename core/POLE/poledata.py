@@ -1,5 +1,5 @@
 from core.BRACKET.bracket_specs import BracketSpec
-from core.BRACKET.bracketdata import BracketElement
+from core.BRACKET.bracketdata import BracketDesign
 from core.FEEDER.feeder_spec import FeederSpec
 from core.FEEDER.feederdata import FeederDATA
 from core.MAST.mast_spec import MastSpec
@@ -28,7 +28,7 @@ class PolePlaceDATA:
     """
     def __init__(self):
         self.masts: list[MastDesign] = []
-        self.brackets: list[BracketElement] = []
+        self.brackets: list[BracketDesign] = []
         self.feeders: list[FeederDATA] =  []
         self.ref: PoleRefData | None = None
         self.track_index: int = 0
@@ -46,10 +46,9 @@ class PolePlaceDATA:
         self.brackets.clear()
 
         for spec in specs:
-            bracket = BracketElement()
-            bracket.element_type = spec.element_type
+            bracket = BracketDesign()
             bracket.name = spec.name
-            bracket.index = spec.index
+            bracket.code = spec.index
             bracket.direction = spec.direction
             self.brackets.append(bracket)
 
