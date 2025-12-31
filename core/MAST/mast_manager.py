@@ -7,14 +7,14 @@ from utils.logger import logger
 class MastManager(BaseManager):
     def __init__(self, dataloader, polecollection):
         super().__init__(dataloader)
-        self.collecton = polecollection
+        self.collection = polecollection
 
     def run(self):
         policy = MastPolicy()
         speed = self.loader.databudle.designspeed
         builder = MastBuilder(policy)
 
-        for pole in self.collecton.iter_poles():
+        for pole in self.collection.iter_poles():
             try:
                 builder.apply(pole, speed)
             except Exception:
