@@ -24,10 +24,16 @@ class JsonExporter:
 
     def mastspec_to_dict(self, spec) -> dict:
         return {
-            "index": spec.index,
+            "code": spec.code,
             "direction": spec.direction.name
         }
 
+    def bracket_to_dict(self, spec) -> dict:
+        return {
+            "code": spec.code,
+            "direction": spec.direction.name,
+            "name": spec.name
+        }
     def polegroup_to_dict(self, group) -> dict:
         return {
             "pos": group.pos,
@@ -54,6 +60,10 @@ class JsonExporter:
             "masts": [
                 self.mastspec_to_dict(spec)
                 for spec in pole.masts
+            ],
+            "brackets": [
+                self.bracket_to_dict(spec)
+                for spec in pole.brackets
             ]
         }
 
