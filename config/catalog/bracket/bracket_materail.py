@@ -1,26 +1,8 @@
 from dataclasses import dataclass
-from enum import Enum
 
-class BracketBaseType(Enum):
-    I = "I"
-    O = "O"
-    F = "F"
+from config.catalog.bracket.bracket_type_enum import BracketBaseType, BracketSpecialType, BracketVariant, \
+    BracketInstallType
 
-class BracketVariant(Enum):
-    SHORT = "S"
-    LONG = "L"
-    NONE = ""
-
-class BracketSpecialType(Enum):
-    AJ = "AJ"     # Air Joint
-    AS = "AS"     # Air Section
-    TN = "TN"     # Tunnel Special
-    NONE = ""
-
-class BracketInstallType(Enum):
-    OPG = "OPG"
-    TN = "TN"
-    NONE = ""
 
 @dataclass(frozen=True)
 class BracketMaterial:
