@@ -34,6 +34,13 @@ class JsonExporter:
             "direction": spec.direction.name,
             "name": spec.name
         }
+    def feeder_to_dict(self, spec) -> dict:
+        return {
+            "code": spec.code,
+            "direction": spec.direction.name,
+            "name": spec.name
+        }
+
     def polegroup_to_dict(self, group) -> dict:
         return {
             "pos": group.pos,
@@ -64,6 +71,10 @@ class JsonExporter:
             "brackets": [
                 self.bracket_to_dict(spec)
                 for spec in pole.brackets
+            ],
+            "feeders":[
+                self.feeder_to_dict(spec)
+                for spec in pole.feeders
             ]
         }
 
