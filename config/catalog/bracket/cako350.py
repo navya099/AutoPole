@@ -36,7 +36,7 @@ CAKO350: dict[int, BracketMaterial] = {
         base_type=BracketBaseType.I,
         special_type=BracketSpecialType.AJ,
         install_type=BracketInstallType.OPG,
-        variant=BracketVariant.N,
+        variant=BracketVariant.NONE,
         gauge=3.0,
     ),
     0000: BracketMaterial(
