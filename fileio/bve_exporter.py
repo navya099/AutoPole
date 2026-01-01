@@ -33,6 +33,8 @@ class BVECSV:
                 mastname = data.poles[i].mast.name
                 bracketindex = data.poles[i].Brackets[0].index
                 bracketname = data.poles[i].Brackets[0].name
+                bracket_direction = data.poles[i].Brackets[0].direction
+
                 feederindex = data.poles[i].feeder.index
                 feedername = data.poles[i].feeder.name
                 feeder_x = data.poles[i].feeder.positionx
@@ -41,18 +43,30 @@ class BVECSV:
                 current_curve = data.poles[i].current_curve
                 gauge = data.poles[i].gauge
                 mast_direction = data.poles[i].mast.direction
-                bracket_direction = data.poles[i].Brackets[0].direction
+
                 feeder_direction = data.poles[i].feeder.direction
 
                 mast_xoffset = gauge * mast_direction.value
                 bracket_pitch = 0 if bracket_direction == Direction.LEFT else 180
                 feeder_pitch = 0 if feeder_direction == Direction.LEFT else 180
                 # 구문 작성
+
                 self.lines.append(f',;{post_number}\n')
                 self.lines.append(f',;-----{current_airjoint}({current_structure})({current_curve})-----\n')
                 self.lines.append(f'{pos},.freeobj 0;{mastindex};{mast_xoffset},;{mastname}\n')
                 self.lines.append(f'{pos},.freeobj 0;{bracketindex};0;0;{bracket_pitch};,;{bracketname}\n\n')
                 self.lines.append(f'{pos},.freeobj 0;{feederindex};{feeder_x};0;{feeder_pitch};,;{feedername}\n\n')
+
+                if len(data.poles[i].Brackets) > 1:
+                    bracketindex2 = data.poles[i].Brackets[1].index
+                    bracketname2 = data.poles[i].Brackets[1].name
+                    bracket_direction2 = data.poles[i].Brackets[1].direction
+                    bracket_pitch2 = 180 if bracket_direction == Direction.LEFT else 0
+                    self.lines.append(f',;상선\n')
+                    self.lines.append(f'{pos},.freeobj 1;{mastindex};{-mast_xoffset};0;180,;{mastname}\n')
+                    self.lines.append(f'{pos},.freeobj 1;{bracketindex2};0;0;{bracket_pitch2};,;{bracketname2}\n\n')
+                    self.lines.append(f'{pos},.freeobj 1;{feederindex};{-feeder_x};0;{bracket_pitch2};,;{feedername}\n\n')
+
             except AttributeError as e:
                 logger.warning(f"poledata 데이터 누락: index {i}, 오류: {e}")
             except Exception as e:
@@ -102,6 +116,15 @@ class BVECSV:
                 self.lines.append(f'{pos},.freeobj 0;{af_index};{af_x};{af_y};{af_yaw};{af_pitch};,;{af_name}\n\n')
                 self.lines.append(f'{pos},.freeobj 0;'
                                   f'{fpw_index};{fpw_x};{fpw_y};{fpw_yaw};{fpw_pitch};,;{fpw_name}\n\n')
+
+                if len(data.poles[i].Brackets) > 1:
+                    self.lines.append(f',;상선\n')
+                    self.lines.append(f'{pos},.freeobj 1;'
+                                      f'{contact_index};{stagger};0;{contact_yaw};{contact_pitch};,;{contact_name}\n\n')
+                    self.lines.append(f'{pos},.freeobj 1;{af_index};{-af_x};{af_y};{af_yaw};{af_pitch};,;{af_name}\n\n')
+                    self.lines.append(f'{pos},.freeobj 1;'
+                                      f'{fpw_index};{-fpw_x};{fpw_y};{fpw_yaw};{fpw_pitch};,;{fpw_name}\n\n')
+
             except AttributeError as e:
                 logger.warning(f"Wire 데이터 누락: index {i}, 오류: {e}")
             except Exception as e:
