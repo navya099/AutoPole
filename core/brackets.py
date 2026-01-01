@@ -1,6 +1,6 @@
 import traceback
 from dataclasses import dataclass
-from core.pole import BaseManager, PoleDATAManager
+from core.pole import BaseManager, PoleDATAManager, BracketElement
 from utils.logger import logger
 from utils.util import Direction
 
@@ -33,29 +33,36 @@ class BracketManager(BaseManager):
                 if self.loader.databudle.mode == 0:  # 기존 노선용
                     current_type, bracket_type, install_type, gauge = self.create_bracket_with_old_alignment(i, data)
                 else:
-                    current_type, bracket_type, install_type, gauge = self.create_bracket_with_new_alignment(i, data)
+                    count = self.loader.databudle.linecount
+                    k = 0
+                    for j in range(i , i + count):
+                        current_type, bracket_type, install_type, gauge = self.create_bracket_with_new_alignment(j, data)
 
-                bracket_index = self.get_brackettype(
-                    self.loader.databudle.designspeed, install_type, gauge, bracket_type
-                )
-                if install_type == 'Tn':
-                    bracket_full_name = f'CaKo{self.loader.databudle.designspeed}-{install_type}-{current_type}'
-                else:
-                    bracket_full_name = f'CaKo{self.loader.databudle.designspeed}-{install_type}{gauge}-{current_type}'
+                        bracket_index = self.get_brackettype(
+                            self.loader.databudle.designspeed, install_type, gauge, bracket_type
+                        )
+                        if install_type == 'Tn':
+                            bracket_full_name = f'CaKo{self.loader.databudle.designspeed}-{install_type}-{current_type}'
+                        else:
+                            bracket_full_name = f'CaKo{self.loader.databudle.designspeed}-{install_type}{gauge}-{current_type}'
 
-                if data.poles[i].direction == Direction.LEFT and install_type != 'Tn':
-                    bracket_direction = Direction.LEFT
-                else:
-                    bracket_direction = Direction.RIGHT
+                        if data.poles[j].direction == Direction.LEFT and install_type != 'Tn':
+                            bracket_direction = Direction.LEFT
+                        else:
+                            bracket_direction = Direction.RIGHT
 
-                #  속성지정
-                data.poles[i].Brackets[0].element_type = current_type
-                data.poles[i].Brackets[0].name = bracket_full_name
-                data.poles[i].Brackets[0].index = bracket_index
+                        #  속성지정
+                        if not len(data.poles[i].Brackets) == count:
+                            while len(data.poles[i].Brackets) < count:
+                                data.poles[i].Brackets.append(BracketElement())
 
-                data.poles[i].gauge = gauge
-                data.poles[i].Brackets[0].direction = bracket_direction  # 개별 브래킷 방향
+                        data.poles[i].Brackets[k].element_type = current_type
+                        data.poles[i].Brackets[k].name = bracket_full_name
+                        data.poles[i].Brackets[k].index = bracket_index
 
+                        data.poles[i].gauge = gauge
+                        data.poles[i].Brackets[k].direction = bracket_direction  # 개별 브래킷 방향
+                        k += 1
             except Exception as ex:
                 error_message = (
                     f"예외 발생 in create_bracket!\n"
