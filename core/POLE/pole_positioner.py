@@ -17,7 +17,7 @@ class PolePositionManager(BaseManager):
     def __init__(self, dataloader):
         super().__init__(dataloader)
         self.pole_positions: list[int] = []
-        self.airjoint_list: list[tuple[int, str]] = []
+        self.airjoint_list = []
         logger.debug(f'PolePositionManager 초기화 완료')
 
     def run(self):
@@ -67,20 +67,21 @@ class PolePositionManager(BaseManager):
         return polerefdatas
 
     def apply_airjoint(self):
-        airjoint_map = dict(self.airjoint_list)
+        ref_map = {ref.pos: ref for ref in self.polerefdata}
 
-        for poleref in self.polerefdata:
-            stage = airjoint_map.get(poleref.pos)
-            if not stage:
-                stage = SectionType.NORMAL
+        for cluster in self.airjoint_list:
+            for idx, pos in enumerate(cluster.positions):
+                ref = ref_map.get(pos)
+                if not ref:
+                    continue
 
-            poleref.section_info = stage
+                ref.section_info = SectionType.AIRJOINT
 
     def _generate_auto(self):
 
         """자동 포지션 생성 메소드 """
         self.pole_positions = PoleUtils.distribute_pole_spacing_flexible( self.loader.bvealignment.startkm, self.loader.bvealignment.endkm, spans=(45, 50, 55, 60) )
-        self.airjoint_list = AirjointManager.define_airjoint_section(self.pole_positions)
+        self.airjoint_list = AirjointManager.define_airjoint_clusters(self.pole_positions)
 
 
     def _load_from_source(self, source):

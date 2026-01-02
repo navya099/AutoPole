@@ -1,3 +1,4 @@
+from core.section.section_type import SectionType
 from point3d import Point3d
 
 class PoleRefData:
@@ -33,7 +34,7 @@ class PoleRefData:
         self.azimuth: float = 0.0
 
         #구간 정보
-        self.section_info: str = ''
+        self.section_info: SectionType = SectionType.NORMAL
 
     @property
     def is_last(self) -> bool:
