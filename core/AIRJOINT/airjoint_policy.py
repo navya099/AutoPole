@@ -13,12 +13,8 @@ class AIRJOINTPolicy(BracketPolicy):
         speed: int
     ) -> dict[int, list[BracketSpec]]:
 
-        first_pos = cluster.positions[0]
+        first_pos, second_pos, third_pos, fourth_pos, end_pos = cluster.positions[:5]
         first_index = group_index_map[first_pos]
-        second_pos = cluster.positions[1]
-        third_pos = cluster.positions[2]
-        fourth_pos = cluster.positions[3]
-        end_pos = cluster.positions[4]
 
         first_spec = self.first_pole_process(first_index, first_pos, pole_map[first_pos], speed)
         second_spec = self.second_pole_process(second_pos, pole_map[second_pos], speed)
@@ -52,7 +48,8 @@ class AIRJOINTPolicy(BracketPolicy):
 
     def end_pole_process(self, spec, pos):
         # endpole은 시작전주와 동일
-        return {pos: spec[pos]}
+        value = next(iter(spec.values()))  # 첫 번째 값 꺼내기
+        return {pos: value}
 
     def decide_f_bracket(self, pole, speed, variant):
         """F브래킷 생성용 정책"""
