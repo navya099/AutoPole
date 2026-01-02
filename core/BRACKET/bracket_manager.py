@@ -26,7 +26,7 @@ class BracketManager(BaseManager):
                 if pole.current_section == SectionType.AIRJOINT:
                     continue
                 try:  # pole 순회
-                    specs = policy.decide(group_index, pole, self.loader)
+                    specs = policy.decide(group_index, pole, self.loader.databudle.designspeed)
                     pole.brackets.extend(specs)
                 except Exception:
                     logger.exception(f"Bracket 생성 실패 (index={group_index})")

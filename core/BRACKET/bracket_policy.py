@@ -10,17 +10,17 @@ class BracketPolicy:
     def __init__(self):
         self.catalog = BracketCatalog()# 브래킷 데이터 클래스 가져오기
 
-    def decide(self, index: int, pole, dataloader) -> list[BracketSpec]:
+    def decide(self, index: int, pole, speed) -> list[BracketSpec]:
         """브래킷 정책 결정 메서드"""
         specs: list[BracketSpec] = []
 
         # 기본 브래킷
-        base = self._decide_base(index, pole, dataloader)
+        base = self._decide_base(index, pole, speed)
         specs.append(base)
 
         return specs
 
-    def _decide_base(self,index: int,pole: PolePlaceDATA, dataloader) -> BracketSpec:
+    def _decide_base(self,index: int,pole: PolePlaceDATA, speed) -> BracketSpec:
         """단일 생성용 정책"""
         # i타입 bool판별
         is_i_type = self._is_i_type(index, pole)
@@ -32,13 +32,11 @@ class BracketPolicy:
         direction = self.resolve_bracket_direction(pole.direction, install_type)
         # 구조물에 따라 스왑
         current_type = self.swap_type(direction, current_type, pole.ref.structure_type)
-        #터널구간인경우
-        specialtype = BracketSpecialType.TN if pole.ref.structure_type == '터널' else BracketSpecialType.NONE
         #코드 찾기
         mat = self.catalog.find_one(
-            speed=dataloader.databudle.designspeed,
+            speed=speed,
             base_type=current_type,
-            special_type=specialtype,
+            special_type=BracketSpecialType.NONE,
             install_type=install_type,
             variant=BracketVariant.NONE,
             gauge=pole.gauge,
