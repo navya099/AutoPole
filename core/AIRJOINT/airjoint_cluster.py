@@ -5,4 +5,5 @@ from core.POLE.poledata import PolePlaceDATA
 
 @dataclass
 class AirJointCluster:
-    poles: list[PolePlaceDATA]  # 반드시 5개
+    number: str
+    positions: list[int]  # 반드시 5개
