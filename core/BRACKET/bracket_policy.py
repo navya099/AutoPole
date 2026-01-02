@@ -3,6 +3,7 @@ from config.catalog.bracket.bracket_type_enum import BracketBaseType, BracketIns
     BracketVariant
 from core.BRACKET.bracket_specs import BracketSpec
 from core.POLE.poledata import PolePlaceDATA
+
 from utils.util import Direction
 
 class BracketPolicy:
@@ -16,18 +17,7 @@ class BracketPolicy:
         # 기본 브래킷
         base = self._decide_base(index, pole, dataloader)
         specs.append(base)
-        """
-        징래 구현용 주석처리
-        # 에어조인트 보강 브래킷
-        if pole.current_airjoint == '에어조인트':
-            aj = self._decide_airjoint(index, pole, dataloader)
-            specs.append(aj)
 
-        # 터널 보조 브래킷
-        if pole.current_structure == '터널':
-            tn = self._decide_tunnel(index, pole, dataloader)
-            specs.append(tn)
-        """
         return specs
 
     def _decide_base(self,index: int,pole: PolePlaceDATA, dataloader) -> BracketSpec:
