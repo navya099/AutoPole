@@ -13,7 +13,6 @@ class BracketVariant(Enum):
 class BracketSpecialType(Enum):
     AJ = "AJ"     # Air Joint
     AS = "AS"     # Air Section
-    TN = "TN"     # Tunnel Special
     NONE = ""
 
 class BracketInstallType(Enum):
