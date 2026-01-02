@@ -72,7 +72,7 @@ class MainProcess:
 
 
     def install_bracket(self):
-        self.bracket_manager = BracketManager(self.loader, self.mast_processor.collection)
+        self.bracket_manager = BracketManager(self.pole_processor.airjoint_list, self.loader, self.mast_processor.collection)
         self.bracket_manager.run()
 
     def install_feeder(self):
