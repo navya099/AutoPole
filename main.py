@@ -14,7 +14,7 @@ from ui.main_gui import MainWindow
 
 
 def main():
-    app = MainWindow(debug=True)
+    app = MainWindow(debug=False)
     app.mainloop()
 
 

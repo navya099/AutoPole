@@ -59,7 +59,7 @@ class PolePositionManager(BaseManager):
         """
         if self.loader.databudle.mode == 1:  # 새 노선용
             self.pole_positions = self.distribute_pole_spacing_flexible(
-                self.loader.bvealignment.startkm, self.loader.bvealignment.endkm, spans=(45, 50, 55, 60)
+                self.loader.databudle.start_sta,self.loader.databudle.end_sta, spans=(45, 50, 55, 60)
             )
             self.airjoint_list = self.define_airjoint_section(self.pole_positions)
             self.post_number_lst = self.generate_postnumbers(self.pole_positions)

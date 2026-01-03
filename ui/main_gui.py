@@ -57,7 +57,7 @@ class TaskWizard(tk.Toplevel):
         self.file_paths = [tk.StringVar() for _ in range(4)]
         self.step = 0
         self.mode = tk.StringVar()
-        self.inputs = [tk.StringVar() for _ in range(4)]  # 4개의 입력에 대해 StringVar 초기화
+        self.inputs = [tk.StringVar() for _ in range(7)]  # 4개의 입력에 대해 StringVar 초기화
         self.next_button = None  # Initialize next_button as None
         self.update_step()
         self.curve_info_path = None
@@ -224,6 +224,9 @@ class TaskWizard(tk.Toplevel):
             '선로 갯수',
             '선로중심간격',
             '폴 방향',
+            '시작 측점',
+            '끝 측점',
+            '파정'
         ]
 
         # 콤보박스로 대체할 값 목록 (예시)
@@ -327,7 +330,10 @@ class TaskWizard(tk.Toplevel):
                 curve_path=self.file_paths[0].get(),
                 pitch_path=self.file_paths[1].get(),
                 coord_path=self.file_paths[2].get(),
-                structure_path=self.file_paths[3].get()
+                structure_path=self.file_paths[3].get(),
+                start_sta=float(self.inputs[4].get()),
+                end_sta=float(self.inputs[5].get()),
+                offset=float(self.inputs[6].get())
             )
             process = MainProcess(databundle)
             process.run_with_callback(progress_callback=q.put)

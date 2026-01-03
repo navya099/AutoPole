@@ -98,6 +98,14 @@ class StructureCollection(list):
                 f"structure lookup failed: {type(ex).__name__} - {ex} | sta={sta}")
         return '토공'
 
+    def apply_offset(self, offset: float = 0.0):
+        """
+        모든 구조물의 시작/끝 측점에 동일한 offset을 적용.
+        예: offset=100 → 모든 startsta, endsta에 +100
+        """
+        for s in self:
+            s.startsta += offset
+            s.endsta += offset
 
 class StructureFactory:
     """구조물 객체를 생성하는 팩토리 클래스"""

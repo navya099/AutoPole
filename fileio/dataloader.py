@@ -19,6 +19,8 @@ class DataBundle:
         pitch_path: pitch_info 경로
         coord_path: coord_info 경로
         structure_path: structure_info 경로
+        start_sta: 시작 측점
+        end_sta: 끝 측점
     """
     designspeed: int = 0
     linecount: int = 0
@@ -29,7 +31,9 @@ class DataBundle:
     pitch_path: str = ''
     coord_path: str = ''
     structure_path: str = ''
-
+    start_sta: float = 0.0
+    end_sta: float = 0.0
+    offset: float = 0.0
 
 class DataLoader:
     def __init__(self, databudle: DataBundle):
@@ -70,6 +74,7 @@ class DataLoader:
         if self.databudle.structure_path:
             self.excelprocessor.set_filepath(self.databudle.structure_path)
             self.excelprocessor.process_structure_data(self.structures)
+            self.structures.apply_offset(self.databudle.offset)
 
         else:
             logger.error("structures 파일 경로(databundle.structure_path)가 설정되지 않았습니다.")
