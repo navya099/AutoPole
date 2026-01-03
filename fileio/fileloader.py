@@ -344,32 +344,45 @@ class ExcelFileHandler(BaseFileHandler):
         """교량과 터널 구간 정보를 처리하는 메소드"""
         self.read_excel()
 
-        if self.excel_BRIDGE_Data is None or self.excel_TUNNEL_Data is None:
+        if self.excel_BRIDGE_Data is None and self.excel_TUNNEL_Data is None:
             logger.warning("엑셀 데이터가 로드되지 않았습니다.")
             return structures
 
-        # 첫 번째 행을 열 제목으로 설정
-        self.excel_BRIDGE_Data.columns = ['br_NAME', 'br_START_STA', 'br_END_STA', 'br_LENGTH']
-        self.excel_TUNNEL_Data.columns = ['tn_NAME', 'tn_START_STA', 'tn_END_STA', 'tn_LENGTH']
-
         try:
-            for _, row in self.excel_BRIDGE_Data.iterrows():
-                s = StructureFactory.create_structure(
-                    structuretype='교량',
-                    name=row['br_NAME'],
-                    startsta=row['br_START_STA'],
-                    endsta=row['br_END_STA']
-                )
-                structures.append(s)
+            # 교량 데이터 처리
+            if self.excel_BRIDGE_Data is not None and not self.excel_BRIDGE_Data.empty:
+                self.excel_BRIDGE_Data.columns = ['br_NAME', 'br_START_STA', 'br_END_STA', 'br_LENGTH']
+                for _, row in self.excel_BRIDGE_Data.iterrows():
+                    if pd.isna(row['br_START_STA']) or pd.isna(row['br_END_STA']):
+                        logger.warning(f"빈 구간 건너뜀: {row}")
+                        continue
+                    s = StructureFactory.create_structure(
+                        structuretype='교량',
+                        name=row['br_NAME'],
+                        startsta=row['br_START_STA'],
+                        endsta=row['br_END_STA']
+                    )
+                    structures.append(s)
+            else:
+                logger.info("교량 데이터 없음 → 건너뜀")
 
-            for _, row in self.excel_TUNNEL_Data.iterrows():
-                s = StructureFactory.create_structure(
-                    structuretype='터널',
-                    name=row['tn_NAME'],
-                    startsta=row['tn_START_STA'],
-                    endsta=row['tn_END_STA']
-                )
-                structures.append(s)
+            # 터널 데이터 처리
+            if self.excel_TUNNEL_Data is not None and not self.excel_TUNNEL_Data.empty:
+                self.excel_TUNNEL_Data.columns = ['tn_NAME', 'tn_START_STA', 'tn_END_STA', 'tn_LENGTH']
+                for _, row in self.excel_TUNNEL_Data.iterrows():
+                    if pd.isna(row['tn_START_STA']) or pd.isna(row['tn_END_STA']):
+                        logger.warning(f"빈 구간 건너뜀: {row}")
+                        continue
+                    s = StructureFactory.create_structure(
+                        structuretype='터널',
+                        name=row['tn_NAME'],
+                        startsta=row['tn_START_STA'],
+                        endsta=row['tn_END_STA']
+                    )
+                    structures.append(s)
+            else:
+                logger.info("터널 데이터 없음 → 건너뜀")
+
         except Exception as e:
             logger.error(f"구조 데이터 처리 중 오류 발생: {e}", exc_info=True)
             return structures
