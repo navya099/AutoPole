@@ -1,6 +1,7 @@
 from enum import Enum, auto
 
 class SectionType(Enum):
+    SUBSTATION = auto()
     NORMAL = auto()           # 일반개소
     AIRJOINT = auto()         # 에어조인트
     AIRSECTION = auto()       # 에어섹션
