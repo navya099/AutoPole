@@ -1,6 +1,6 @@
 import datetime
 
-from geometry.alignment import BVEAlignment
+from geometryor.alignment import BVEAlignment, Curve, Pitch
 from structures.structure import StructureCollection, Bridge, Tunnel, StructureFactory
 from utils.Vector3 import Vector3
 from utils.logger import logger
@@ -196,7 +196,7 @@ class TxTFileHandler(BaseFileHandler):
             logger.error(f"곡선 파일 읽기 오류: {e}", exc_info=True)
             return bvealignment
 
-        from geometry.alignment import Curve
+
         for _, row in df.iterrows():
             curve = Curve()
             curve.startsta = float(row['sta'])
@@ -217,7 +217,6 @@ class TxTFileHandler(BaseFileHandler):
             logger.error(f"종단기울기 파일 읽기 오류: {e}", exc_info=True)
             return bvealignment
 
-        from geometry.alignment import Pitch
         for _, row in df.iterrows():
             pitch = Pitch()
             pitch.startsta = float(row['sta'])
