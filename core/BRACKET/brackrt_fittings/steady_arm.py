@@ -1,5 +1,6 @@
 from config.catalog.bracket.bracket_type_enum import BracketBaseType
 from core.BRACKET.brackrt_fittings.bracket_fitting_strategy import BracketFittingStrategy
+from core.BRACKET.brackrt_fittings.fitting_type_enum import FittingTypeEnum
 from core.BRACKET.brackrt_fittings.steady_arm_placer import SteadyArmPlacement
 from utils.util import TrackSide
 
@@ -16,6 +17,7 @@ class SteadyArmFitting(BracketFittingStrategy):
             side=arm_install_direction,
             code=0,#임시
             stagger=stagger,
+            type=FittingTypeEnum.SteadyArm
         )
 
     def fit_stagger(self, bracket_spec):

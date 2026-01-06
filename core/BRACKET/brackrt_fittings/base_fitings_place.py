@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+
+from core.BRACKET.brackrt_fittings.fitting_type_enum import FittingTypeEnum
 from utils.util import TrackSide
 
 @dataclass
@@ -8,3 +10,4 @@ class BaseFittingPlace:
     side: TrackSide
     code: int
     stagger: float
+    type: FittingTypeEnum
