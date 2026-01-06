@@ -30,7 +30,7 @@ class JsonExporter:
 
     def bracket_to_dict(self, spec) -> dict:
         return {
-            "code": spec.code,
+            "code": spec.index,
             "direction": spec.direction.name,
             "name": spec.name
         }
@@ -41,6 +41,16 @@ class JsonExporter:
             "name": spec.name
         }
 
+    def fitting_to_dict(self, spec):
+        return {
+            "pole_pos": spec.pole_pos,
+            "bracket_index": spec.bracket_index,
+            "side": spec.side.name,
+            "code": spec.code,
+            "stagger": spec.stagger,
+            "type": spec.type.name,
+
+        }
     def polegroup_to_dict(self, group) -> dict:
         return {
             "pos": group.pos,
@@ -63,7 +73,7 @@ class JsonExporter:
                 "x": pole.coord.x,
                 "y": pole.coord.y
             },
-            "current_section": pole.current_section,
+            "current_section": pole.current_section.name,
             "masts": [
                 self.mastspec_to_dict(spec)
                 for spec in pole.masts
@@ -75,7 +85,28 @@ class JsonExporter:
             "feeders":[
                 self.feeder_to_dict(spec)
                 for spec in pole.feeders
+            ],
+            "fittings":[
+                self.fitting_to_dict(fiting)
+                for fiting in pole.fittings
             ]
+        }
+
+    def wirebundle_to_dict(self, bundle):
+        return {
+            "index": bundle.index,
+            "start_ref": bundle.start_ref.pos,
+            "end_ref": bundle.end_ref.pos,
+            "wires": [self.wire_to_dict(wire) for wire in bundle.wires],
+        }
+
+    def wire_to_dict(self, wire):
+        return {
+            "type": wire.type.name,
+            "start_ref": wire.start_ref.pos,
+            "end_ref": wire.end_ref.pos,
+            "index": wire.index,
+            "meta": 'None' if wire.meta is None else json.dumps(wire.meta),
         }
 
     def export_polegroups(self, polegroup_manager, path: str):
@@ -86,4 +117,10 @@ class JsonExporter:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
-
+    def export_wiredata(self, wiredata, path: str):
+        data = [
+            self.wirebundle_to_dict(bundles)
+            for bundles in wiredata.bundles
+        ]
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
