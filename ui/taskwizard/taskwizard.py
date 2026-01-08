@@ -1,5 +1,7 @@
 import tkinter as tk
+
 import queue
+from tkinter import messagebox
 
 from ui.placemnet_window.place_window import PlaceWindow
 from ui.taskwizard.design_context import DesignContext
@@ -76,6 +78,12 @@ class TaskWizard(tk.Toplevel):
             self.next_btn.config(text="완료", command=self.finish_wizard)
 
     def next_step(self):
+        valid, message = self.state.validate_step(self.step)
+
+        if not valid:
+            messagebox.showwarning("입력 오류", message)
+            return
+
         self.step += 1
         self.update_step()
 

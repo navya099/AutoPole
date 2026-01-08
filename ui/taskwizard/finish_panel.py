@@ -1,6 +1,5 @@
 from ui.taskwizard.steppanels import StepPanel
 import tkinter as tk
-from tkinter import ttk
 
 class FinishPanel(StepPanel):
     def show(self):
