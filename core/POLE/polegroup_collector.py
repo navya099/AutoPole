@@ -49,3 +49,24 @@ class PoleGroupCollection:
 
     def sorted_groups(self):
         return sorted(self.groups, key=lambda g: g.pos)
+
+    def count_poles(self) -> int:
+        return sum(len(group.poles) for group in self.groups)
+
+    def poles_by_track_for_detail(self) -> dict[int, list[dict]]:
+        """
+        트랙별 상세 전주 리스트 반환
+        { track_index: [ {전주번호, 측점, X, Y, 종류}, ... ] }
+        """
+        result = {}
+        for track in self.track_indices():
+            result[track] = [
+                {
+                    "전주번호": pole.post_number,
+                    "측점": pole.pos,
+                    "X": pole.coord.x,
+                    "Y": pole.coord.y,
+                }
+                for pole in self.get_poles_by_track(track)
+            ]
+        return result
