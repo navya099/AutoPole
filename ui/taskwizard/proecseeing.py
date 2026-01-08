@@ -1,11 +1,16 @@
 # processing.py
 import tkinter as tk
 from tkinter import ttk
+
+from core.maincore.progress_event import ProgressType
 from ui.taskwizard.steppanels import StepPanel
 from ui.taskwizard.taskworker import TaskWorker
 import queue
 
 class ProcessingPanel(StepPanel):
+    def __init__(self, master, state, design_context):
+        super().__init__(master, state)
+        self.design_context = design_context
     def show(self):
         self.clear()
         tk.Label(self.master, text="단계4: 처리 중", font=("Arial", 14)).pack(pady=10)
@@ -27,28 +32,29 @@ class ProcessingPanel(StepPanel):
         self.progress_var.set(0)
 
         self.worker_queue = queue.Queue()
-        self.worker = TaskWorker(self.state, self.worker_queue)
+        self.worker = TaskWorker(self.state, self.worker_queue, self.design_context)
         self.worker.start()
 
         self.master.after(100, self.check_thread)
 
     def check_thread(self):
         try:
-            msg = self.worker_queue.get_nowait()
-            if "|" in msg:
-                percent, text = msg.split("|", 1)
-                # percent가 숫자인지 확인
-                try:
-                    self.progress_var.set(float(percent))
-                except ValueError:
-                    # 오류 메시지일 경우 progress_var 무시
-                    pass
-                self.progress_label.config(text=text)
+            event = self.worker_queue.get_nowait()
 
-            if "완료" in msg or "오류" in msg:
+            self.progress_var.set(event.percent)
+            self.progress_label.config(text=event.message)
+
+            if event.type == ProgressType.ERROR:
                 self.start_button.config(state="disabled")
                 return
+
+            if event.type == ProgressType.FINISHED:
+                self.start_button.config(state="disabled")
+                return
+
         except queue.Empty:
             pass
+
         self.master.after(100, self.check_thread)
+
 

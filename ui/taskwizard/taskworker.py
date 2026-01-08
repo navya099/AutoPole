@@ -1,17 +1,19 @@
 # taskworker.py
 import threading
 import queue
+
+from ui.taskwizard.design_context import DesignContext
 from utils.logger import logger
-from core.core import MainProcess
+from core.maincore.core import MainProcess
 from fileio.dataloader import DataBundle
 from ui.taskwizard.wizardstate import WizardState
 
 class TaskWorker(threading.Thread):
-    def __init__(self, state: WizardState, progress_queue: queue.Queue):
+    def __init__(self, state: WizardState, progress_queue: queue.Queue, design_context: DesignContext):
         super().__init__()
         self.state = state
         self.queue = progress_queue
-
+        self.design_context = design_context
     def run(self):
         try:
             databundle = DataBundle(
@@ -25,9 +27,8 @@ class TaskWorker(threading.Thread):
                 coord_path=self.state.file_paths[2].get(),
                 structure_path=self.state.file_paths[3].get()
             )
-            process = MainProcess(databundle)
+            process = MainProcess(databundle, self.design_context)
             process.run_with_callback(progress_callback=self.queue.put)
-            self.queue.put("100|완료")
         except Exception as e:
             logger.error(f"작업 처리 중 오류 발생: {e}", exc_info=True)
-            self.queue.put("오류|작업 실패")
+

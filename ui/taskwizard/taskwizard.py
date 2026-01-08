@@ -1,11 +1,11 @@
 import tkinter as tk
 import queue
 
+from ui.taskwizard.design_context import DesignContext
 from ui.taskwizard.fileselect import FileSelectionPanel
 from ui.taskwizard.inputpanle import InputPanel
 from ui.taskwizard.modeselct import ModeSelectionPanel
 from ui.taskwizard.proecseeing import ProcessingPanel
-from ui.taskwizard.taskworker import TaskWorker
 from ui.taskwizard.wizardstate import WizardState
 
 
@@ -17,6 +17,7 @@ class TaskWizard(tk.Toplevel):
         super().__init__(master)
         self.debug = debug
         self.state = WizardState()
+        self.design_context = DesignContext()
         self.queue = queue.Queue()
         self.worker = None
         self.step = 0
@@ -27,7 +28,7 @@ class TaskWizard(tk.Toplevel):
             FileSelectionPanel(self, self.state),
             ModeSelectionPanel(self, self.state),
             InputPanel(self, self.state),
-            ProcessingPanel(self, self.state)
+            ProcessingPanel(self, self.state, self.design_context)
         ]
 
         self.button_frame = tk.Frame(self)
