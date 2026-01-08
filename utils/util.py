@@ -1,13 +1,14 @@
 import math
+import uuid
 from enum import Enum
 
 from utils.logger import logger
 from typing import Literal, List, Tuple
 from utils.Vector3 import Vector3
 
-
-
-
+def generate_entity_id() -> int:
+    """8자리 수준의 고유 ID 생성"""
+    return uuid.uuid4().int & 0xFFFFFFFF  # 하위 32비트만 사용
 
 def get_block_index(current_track_position, block_interval=25):
     """현재 트랙 위치를 블록 인덱스로 변환"""
@@ -147,3 +148,9 @@ class Direction(Enum):
 
 def to_inch(number: float) -> float:
     return number / 25.4
+
+class TrackSide(Enum):
+
+    Inner = 0
+    Outer = 1
+    NONE = 2

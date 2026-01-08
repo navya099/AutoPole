@@ -1,5 +1,7 @@
 from core.section.section_type import SectionType
 from point3d import Point3d
+from utils.util import generate_entity_id
+
 
 class PoleRefData:
     """
@@ -19,7 +21,7 @@ class PoleRefData:
     def __init__(self):
         self.pos: float = 0.0
         self.span: float = 0.0
-
+        self.id: int = generate_entity_id()
         # 선형
         self.curve_type: str = ''
         self.radius: float = 0.0
