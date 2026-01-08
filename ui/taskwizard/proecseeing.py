@@ -8,9 +8,11 @@ from ui.taskwizard.taskworker import TaskWorker
 import queue
 
 class ProcessingPanel(StepPanel):
-    def __init__(self, master, state, design_context):
+    def __init__(self, master, state, design_context, on_finished):
         super().__init__(master, state)
         self.design_context = design_context
+        self.on_finished = on_finished
+
     def show(self):
         self.clear()
         tk.Label(self.master, text="단계4: 처리 중", font=("Arial", 14)).pack(pady=10)
@@ -50,6 +52,11 @@ class ProcessingPanel(StepPanel):
 
             if event.type == ProgressType.FINISHED:
                 self.start_button.config(state="disabled")
+                return
+
+            # check_thread 내부
+            if event.percent >= 100:
+                self.on_finished()
                 return
 
         except queue.Empty:
