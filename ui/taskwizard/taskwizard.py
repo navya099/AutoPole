@@ -1,8 +1,10 @@
 import tkinter as tk
 import queue
 
+from ui.placemnet_window.place_window import PlaceWindow
 from ui.taskwizard.design_context import DesignContext
 from ui.taskwizard.fileselect import FileSelectionPanel
+from ui.taskwizard.finish_panel import FinishPanel
 from ui.taskwizard.inputpanle import InputPanel
 from ui.taskwizard.modeselct import ModeSelectionPanel
 from ui.taskwizard.proecseeing import ProcessingPanel
@@ -24,62 +26,54 @@ class TaskWizard(tk.Toplevel):
         self.title("전주 생성 마법사")
         self.geometry("500x500")
 
-        self.panels = [
-            FileSelectionPanel(self, self.state),
-            ModeSelectionPanel(self, self.state),
-            InputPanel(self, self.state),
-            ProcessingPanel(self, self.state, self.design_context)
-        ]
+        # ✅ content 영역
+        self.content_frame = tk.Frame(self)
+        self.content_frame.pack(fill="both", expand=True)
 
+        # ✅ button 영역
         self.button_frame = tk.Frame(self)
         self.button_frame.pack(side="bottom", pady=10)
-        tk.Button(self.button_frame, text="이전", command=self.prev_step).pack(side="left", padx=5)
-        self.next_button = tk.Button(self.button_frame, text="다음", command=self.next_step)
-        self.next_button.pack(side="left", padx=5)
-        tk.Button(self.button_frame, text="취소", command=self.destroy).pack(side="right", padx=5)
+
+        self.prev_btn = tk.Button(self.button_frame, text="이전", command=self.prev_step)
+        self.next_btn = tk.Button(self.button_frame, text="다음", command=self.next_step)
+        self.cancel_btn = tk.Button(self.button_frame, text="취소", command=self.cancel)
+
+        self.prev_btn.pack(side="left", padx=5)
+        self.next_btn.pack(side="left", padx=5)
+        self.cancel_btn.pack(side="right", padx=5)
+
+        # ✅ 패널 목록
+        self.panels = [
+            FileSelectionPanel(self.content_frame, self.state),
+            ModeSelectionPanel(self.content_frame, self.state),
+            InputPanel(self.content_frame, self.state),
+            ProcessingPanel(
+                self.content_frame,
+                self.state,
+                self.design_context,
+                on_finished=self.on_processing_finished
+            ),
+            FinishPanel(self.content_frame, self.state)
+        ]
 
         self.update_step()
 
+    # -----------------------------
+    # Step Control
+    # -----------------------------
     def update_step(self):
-        """현재 단계 UI 업데이트"""
-        # 기존 위젯 제거
-        for widget in self.winfo_children():
-            widget.destroy()
+        for w in self.content_frame.winfo_children():
+            w.destroy()
 
-        # 각 단계별 UI 구성
-        if self.step == 0:
-            self.panels[0].show()
-            self.enable_next_button(True)
+        self.panels[self.step].show()
 
-        elif self.step == 1:
-            self.panels[1].show()
-        elif self.step == 2:
-            self.panels[2].show()
-            self.enable_next_button(True)  # 유효성 검사 후 '다음' 버튼 활성화
-        elif self.step == 3:
-            self.panels[3].show()
-        elif self.step == 4:
-            tk.Label(self, text="마침", font=("Arial", 14)).pack(pady=10)
-            tk.Label(self, text="모든 작업이 끝났습니다!", font=("Arial", 12)).pack(pady=10)
+        # 버튼 상태 제어
+        self.prev_btn.config(state="normal" if self.step > 0 else "disabled")
 
-        # 버튼 프레임
-        button_frame = tk.Frame(self)
-        button_frame.pack(pady=20)
-
-        if self.step > 0:
-            tk.Button(button_frame, text="이전", command=self.prev_step).pack(side="left", padx=5)
-
-        # '다음' 버튼 초기화
-        if self.next_button:
-            self.next_button.destroy()  # 이전에 있던 next_button을 제거합니다.
-
-        if self.step < 4:
-            self.next_button = tk.Button(button_frame, text="다음", command=self.next_step)
-            self.next_button.pack(side="left", padx=5)
+        if self.step < len(self.panels) - 1:
+            self.next_btn.config(text="다음", command=self.next_step)
         else:
-            tk.Button(button_frame, text="완료", command=self.finish_wizard).pack(side="left", padx=5)
-
-        tk.Button(button_frame, text="취소", command=self.cancel).pack(side="right", padx=5)
+            self.next_btn.config(text="완료", command=self.finish_wizard)
 
     def next_step(self):
         self.step += 1
@@ -90,15 +84,19 @@ class TaskWizard(tk.Toplevel):
             self.step -= 1
             self.update_step()
 
-    def cancel(self):
-        """마법사 종료"""
-        self.destroy()
+    # -----------------------------
+    # Processing 완료 콜백
+    # -----------------------------
+    def on_processing_finished(self):
+        self.step = 4
+        self.update_step()
 
-    def enable_next_button(self, state):
-        """'다음' 버튼 활성화/비활성화"""
-        if self.next_button and self.next_button.winfo_exists():  # Ensure button exists
-            self.next_button.config(state="normal" if state else "disabled")
+    # -----------------------------
+    # 종료
+    # -----------------------------
+    def cancel(self):
+        self.destroy()
 
     def finish_wizard(self):
-        """마법사 완료 후 창 닫기"""
         self.destroy()
+        PlaceWindow(self.master, self.design_context)
