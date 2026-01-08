@@ -196,3 +196,16 @@ class Vector3:
 
     def is_null_vector(self):
         return self.x == 0.0 and self.y == 0.0 and self.z == 0.0
+
+    #조회메서드
+    def plan_angle(self):
+        """XY평면"""
+        v = self.clone()
+        v.normalize()
+        return math.atan2(v.y, v.x)
+
+    def slope_angle(self) -> float:
+        """YZ평면"""
+        # 수직 경사각
+        horizontal = math.sqrt(self.x ** 2 + self.y ** 2)
+        return math.atan2(self.z, horizontal)
