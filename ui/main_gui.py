@@ -1,5 +1,8 @@
 import tkinter as tk
 
+from ui.export_option_window.export_option_window import ExportOptionWindow
+from ui.placement_build_ui.placement_builde_windows import PlacementBuildeWindow
+from ui.result_windows.result_windo import ResultWindow
 from ui.taskwizard.taskwizard import TaskWizard
 from utils.logger import logger
 
@@ -8,22 +11,39 @@ VERSION = "v1.0.6"
 class MainWindow(tk.Tk):
     def __init__(self, debug=False):
         super().__init__()
+        self.result = None
         self.debug = debug  # 🔴 debug 인자 저장
         self.title("전주 처리 프로그램")
         self.geometry("500x200")
         self.wizard = None
-        # "새 작업" 버튼
-        self.new_task_button = tk.Button(self, text="새 작업", command=self.start_wizard)
-        self.new_task_button.pack(pady=20)
-
-        # "종료" 버튼
-        self.exit_button = tk.Button(self, text="종료", command=self.close_application)
-        self.exit_button.pack(pady=20)
 
         # 버전 정보 라벨
-        self.version_label = tk.Label(self, text=f"버전: {VERSION}", fg="gray")
+        self.version_label = tk.Label(self, text=f"버전: {VERSION}\n made by dger", fg="gray")
         self.version_label.pack(side="bottom", pady=(10, 5))  # 창 하단에 배치
 
+        #버튼 프레임
+        brn_frame = tk.Frame(self)
+        brn_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=20)
+        #버튼 내부 프레임 영역
+        inner_frame = tk.Frame(brn_frame)
+        inner_frame.pack()  # 기본 pack: 중앙
+
+        #버튼들
+        tk.Button(inner_frame, text="새 작업", command=self.start_wizard).pack(side="left", padx=10)
+
+        self.showbutton = tk.Button(inner_frame, text="결과 보기", command=self.show_data)
+        self.showbutton.pack(side="left", padx=10)
+        self.showbutton.config(state="normal" if self.result else "disabled")
+
+        self.databutton = tk.Button(inner_frame, text="데이터 생성", command=self.build_data)
+        self.databutton.pack(side="left", padx=10)
+        self.databutton.config(state="normal" if self.result else "disabled")
+
+        self.printbutton = tk.Button(inner_frame, text="출력", command=self.print_data)
+        self.printbutton.pack(side="left", padx=10)
+        self.printbutton.config(state="normal" if self.result else "disabled")
+
+        tk.Button(inner_frame, text="종료", command=self.close_application).pack(side="left", padx=10)
         logger.info(f'MainWindow 초기화 완료')
 
     def start_wizard(self):
@@ -34,5 +54,22 @@ class MainWindow(tk.Tk):
     def close_application(self):
         """프로그램 종료"""
         self.quit()
+        
+    def build_data(self):
+        PlacementBuildeWindow(self, self.result)
 
+    def print_data(self):
+        ExportOptionWindow(self, self.result)
 
+    def show_data(self):
+        ResultWindow(self, self.result)
+
+    def update_buttons(self):
+        state = "normal" if self.result else "disabled"
+        for btn in [self.showbutton, self.databutton, self.printbutton]:
+            btn.config(state=state)
+
+    def reset(self):
+        """모든 결과 리셋"""
+        self.result = None
+        self.update_buttons()

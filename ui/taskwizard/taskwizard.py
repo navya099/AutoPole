@@ -3,7 +3,7 @@ import tkinter as tk
 import queue
 from tkinter import messagebox
 
-from ui.placemnet_window.place_window import PlaceWindow
+from ui.result_windows.result_windo import ResultWindow
 from ui.taskwizard.design_context import DesignContext
 from ui.taskwizard.fileselect import FileSelectionPanel
 from ui.taskwizard.finish_panel import FinishPanel
@@ -106,5 +106,9 @@ class TaskWizard(tk.Toplevel):
         self.destroy()
 
     def finish_wizard(self):
+        self.master.result = self.design_context
+        self.master.update_buttons()
         self.destroy()
-        PlaceWindow(self.master, self.design_context)
+        ResultWindow(self.master, self.design_context)
+
+
