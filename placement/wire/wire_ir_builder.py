@@ -38,7 +38,10 @@ class WireIRBuilder:
                 code=placement.index,
                 track=trackidx,
                 geometry=WireGeometry(start=st, end=ed),
-                meta={"wire_type": wire.type, **wire.meta},
+                meta={"wire_type": wire.type,
+                      "offset_x":placement.offset_x,
+                      "offset_y":placement.offset_y,
+                      },
                 position=None,
                 direction=None
             ))

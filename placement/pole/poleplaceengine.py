@@ -22,7 +22,8 @@ class PolePlaceIRBuilder:
                 track=track,
                 position=pole.coord,
                 direction=mast.direction,
-                meta={"section": pole.current_section}
+                meta={"section": pole.current_section,
+                      "gauge": pole.gauge}
             ))
 
         # Bracket
