@@ -70,3 +70,27 @@ class PoleGroupCollection:
                 for pole in self.get_poles_by_track(track)
             ]
         return result
+
+    def get_by_id(self, ref_id: int) -> list[PolePlaceDATA] | list:
+        lst = []
+        for pole in self.iter_poles():
+            if pole.ref.id == ref_id:
+                lst.extend(pole)
+
+        return lst
+
+    def get_by_id_and_track_idx(
+            self, ref_id: int, track_idx: int
+    ) -> PolePlaceDATA | None:
+        for pole in self.iter_poles():
+            if (
+                    pole.ref
+                    and pole.ref.id == ref_id
+                    and pole.track_index == track_idx
+            ):
+                return pole
+        return None
+
+    def get_by_ref(self, ref, track_index):
+        return self.get_by_id_and_track_idx(ref.id, track_index)
+
