@@ -1,7 +1,7 @@
 from core.WIRE.wire_builder import WireBuilder
 from core.WIRE.wiredata_manager import WireDataManager
 from core.base_manager import BaseManager
-
+from utils.logger import logger
 
 class WireManager(BaseManager):
 
@@ -10,6 +10,7 @@ class WireManager(BaseManager):
         self.collection = polecollection
         self.wiredata = WireDataManager()
 
+        logger.debug(f"WireManager 초기화 완료")
     def run(self):
         builder = WireBuilder()
 
@@ -28,3 +29,5 @@ class WireManager(BaseManager):
 
                 if bundle:
                     self.wiredata.bundles.append(bundle)
+
+        logger.info(f"Wire 생성 완료 {len(self.wiredata.bundles)}")
