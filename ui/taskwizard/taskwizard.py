@@ -1,9 +1,7 @@
 import tkinter as tk
-
 import queue
 from tkinter import messagebox
 
-from ui.result_windows.result_windo import ResultWindow
 from ui.taskwizard.design_context import DesignContext
 from ui.taskwizard.fileselect import FileSelectionPanel
 from ui.taskwizard.finish_panel import FinishPanel
@@ -12,16 +10,16 @@ from ui.taskwizard.modeselct import ModeSelectionPanel
 from ui.taskwizard.proecseeing import ProcessingPanel
 from ui.taskwizard.wizardstate import WizardState
 
-
 # ----------------------------
 # 메인 Wizard
 # ----------------------------
 class TaskWizard(tk.Toplevel):
-    def __init__(self, master, debug=False):
+    def __init__(self, master, subject, debug=False):
         super().__init__(master)
         self.debug = debug
         self.state = WizardState()
         self.design_context = DesignContext()
+        self.subject = subject  # Observer 패턴 연결
         self.queue = queue.Queue()
         self.worker = None
         self.step = 0
@@ -106,9 +104,7 @@ class TaskWizard(tk.Toplevel):
         self.destroy()
 
     def finish_wizard(self):
-        self.master.result = self.design_context
-        self.master.update_buttons()
+        self.subject.result = self.design_context  # Subject를 통해 MainWindow 갱신
         self.destroy()
-        ResultWindow(self.master, self.design_context)
 
 

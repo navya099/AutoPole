@@ -1,6 +1,8 @@
 import tkinter as tk
+from tkinter import messagebox
 
 from ui.export_option_window.export_option_window import ExportOptionWindow
+from ui.observer import ResultSubject
 from ui.placement_build_ui.placement_builde_windows import PlacementBuildeWindow
 from ui.result_windows.result_windo import ResultWindow
 from ui.taskwizard.taskwizard import TaskWizard
@@ -13,6 +15,8 @@ class MainWindow(tk.Tk):
         super().__init__()
         self.result = None
         self.debug = debug  # 🔴 debug 인자 저장
+        self.subject = ResultSubject()
+        self.subject.attach(self)  # Observer 등록
         self.title("전주 처리 프로그램")
         self.geometry("500x200")
         self.wizard = None
@@ -33,43 +37,54 @@ class MainWindow(tk.Tk):
 
         self.showbutton = tk.Button(inner_frame, text="결과 보기", command=self.show_data)
         self.showbutton.pack(side="left", padx=10)
-        self.showbutton.config(state="normal" if self.result else "disabled")
 
         self.databutton = tk.Button(inner_frame, text="데이터 생성", command=self.build_data)
         self.databutton.pack(side="left", padx=10)
-        self.databutton.config(state="normal" if self.result else "disabled")
 
         self.printbutton = tk.Button(inner_frame, text="출력", command=self.print_data)
         self.printbutton.pack(side="left", padx=10)
-        self.printbutton.config(state="normal" if self.result else "disabled")
+
+        self.resetbutton = tk.Button(inner_frame, text="초기화", command=self.reset)
+        self.resetbutton.pack(side="left", padx=10)
 
         tk.Button(inner_frame, text="종료", command=self.close_application).pack(side="left", padx=10)
         logger.info(f'MainWindow 초기화 완료')
 
-    def start_wizard(self):
-        """새 작업 마법사 창 시작"""
-        self.wizard = TaskWizard(self, debug=self.debug)
-        self.wizard.grab_set()  # 메인 창을 잠그고 마법사를 모달 창으로 설정
+        self.update_buttons()
 
-    def close_application(self):
-        """프로그램 종료"""
-        self.quit()
-        
-    def build_data(self):
-        PlacementBuildeWindow(self, self.result)
-
-    def print_data(self):
-        ExportOptionWindow(self, self.result)
-
-    def show_data(self):
-        ResultWindow(self, self.result)
+    def update(self, result):
+        """Observer 인터페이스: Subject가 호출"""
+        self.update_buttons()
 
     def update_buttons(self):
-        state = "normal" if self.result else "disabled"
+        state = "normal" if self.subject.result else "disabled"
         for btn in [self.showbutton, self.databutton, self.printbutton]:
             btn.config(state=state)
 
+    # ------------------------------
+    # 버튼 기능
+    # ------------------------------
+    def start_wizard(self):
+        self.wizard = TaskWizard(self, self.subject)
+        self.wizard.grab_set() #모달로 메인GUI 잠금
+
+    def show_data(self):
+        if self.subject.result:
+            ResultWindow(self, self.subject.result)
+        else:
+            messagebox.showinfo('알림', '설계가 된 값이 없습니다.')
+    def build_data(self):
+        if self.subject.result:
+            PlacementBuildeWindow(self, self.subject.result)
+        else:
+            messagebox.showinfo('알림', '설계가 된 값이 없습니다.')
+    def print_data(self):
+        if self.subject.result:
+            ExportOptionWindow(self, self.subject.result)
+        else:
+            messagebox.showinfo('알림', '설계가 된 값이 없습니다.')
+    def close_application(self):
+        self.quit()
+
     def reset(self):
-        """모든 결과 리셋"""
-        self.result = None
-        self.update_buttons()
+        self.subject.result = None
