@@ -1,14 +1,17 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog
 from tkinter import messagebox
 
-class PlaceWindow(tk.Toplevel):
+import openpyxl
+from openpyxl.utils import get_column_letter
+
+
+class ResultWindow(tk.Toplevel):
     """설계 결과 요약 및 전주 상세보기"""
 
-    def __init__(self, master, design_context, on_export=None):
+    def __init__(self, master, design_context):
         super().__init__(master)
         self.design_context = design_context
-        self.on_export = on_export
 
         self.title("설계 결과 요약")
         self.geometry("700x700")
@@ -28,7 +31,7 @@ class PlaceWindow(tk.Toplevel):
         summary_frame = ttk.LabelFrame(container, text="전주 요약")
         summary_frame.pack(fill="both", expand=True, pady=(0, 10))
 
-        columns = ("전주번호", "트랙", "측점", "X", "Y", "구간")  # 예시로 열 추가
+        columns = ("전주번호", "트랙", "측점", "X", "Y", "구간", "구조물", "선형")  # 예시로 열 추가
         self.tree_summary = ttk.Treeview(
             summary_frame,
             columns=columns,
@@ -81,7 +84,6 @@ class PlaceWindow(tk.Toplevel):
         ttk.Button(btn_frame, text="상세보기 초기화", command=self._clear_detail).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="출력", command=self._export).pack(side="right", padx=5)
         ttk.Button(btn_frame, text="닫기", command=self.destroy).pack(side="right")
-
     def _populate_summary(self):
         """요약 Treeview 데이터 채우기"""
         for pole in self.design_context.poledata.iter_poles():
@@ -96,6 +98,8 @@ class PlaceWindow(tk.Toplevel):
                     getattr(pole.coord, "x", 0),
                     getattr(pole.coord, "y", 0),
                     getattr(pole.current_section, "name", ""),
+                    pole.ref.structure_type,
+                    pole.ref.curve_type
                 )
             )
 
@@ -138,8 +142,51 @@ class PlaceWindow(tk.Toplevel):
             self.tree_detail.delete(item)
 
     def _export(self):
-        """출력 버튼"""
-        if self.on_export:
-            self.on_export()
-        else:
-            messagebox.showinfo("알림", "출력 기능은 구현되지 않았습니다.")
+        """트리뷰 데이터를 Excel로 저장"""
+        # 저장할 파일 경로 선택
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            filetypes=[("Excel 파일", "*.xlsx")],
+            title="엑셀 파일로 저장"
+        )
+        if not file_path:
+            return  # 취소 시 종료
+
+        try:
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Pole Summary"
+
+            # 컬럼 제목
+            columns = ["Post Number", "Track Index", "Position", "Coord X", "Coord Y", "Section", "Structure", "Curve"]
+            ws.append(columns)
+
+            # 트리뷰 데이터 가져오기
+            for iid in self.tree_summary.get_children():
+                values = list(self.tree_summary.item(iid, "values"))
+                # 숫자 컬럼 변환
+                try:
+                    values[1] = int(values[1])  # Track Index
+                except ValueError:
+                    pass
+                try:
+                    values[2] = float(values[2])  # Position
+                    values[3] = float(values[3])  # Coord X
+                    values[4] = float(values[4])  # Coord Y
+                except ValueError:
+                    pass
+                ws.append(values)
+
+            # 컬럼 너비 자동 조정
+            for col_num, col in enumerate(columns, 1):
+                max_length = max(
+                    [len(str(ws.cell(row=row, column=col_num).value)) for row in range(1, ws.max_row + 1)]
+                )
+                ws.column_dimensions[get_column_letter(col_num)].width = max_length + 2
+
+            wb.save(file_path)
+            messagebox.showinfo("완료", f"엑셀 파일로 저장되었습니다.\n{file_path}")
+
+        except Exception as e:
+            messagebox.showerror("오류", f"엑셀 저장 중 오류 발생:\n{e}")
+
