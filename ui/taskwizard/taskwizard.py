@@ -82,6 +82,10 @@ class TaskWizard(tk.Toplevel):
             messagebox.showwarning("입력 오류", message)
             return
 
+        # 🔴 입력 확정 타이밍
+        if self.step == 2:  # InputPanel → ProcessingPanel
+            self.commit_inputs_to_context()
+
         self.step += 1
         self.update_step()
 
@@ -107,4 +111,8 @@ class TaskWizard(tk.Toplevel):
         self.subject.result = self.design_context  # Subject를 통해 MainWindow 갱신
         self.destroy()
 
+    def commit_inputs_to_context(self):
+        self.design_context.speed = self.state.inputs[0].get()
+        self.design_context.offset = self.state.inputs[2].get()
+        self.design_context.direction = self.state.inputs[3].get()
 

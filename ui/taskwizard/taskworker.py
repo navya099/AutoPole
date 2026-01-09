@@ -21,7 +21,7 @@ class TaskWorker(threading.Thread):
                 linecount=int(self.state.inputs[1].get()),
                 lineoffset=float(self.state.inputs[2].get()),
                 poledirection=int(self.state.inputs[3].get()),
-                mode=0 if self.state.mode.get() == '기존 노선용' else 1,
+                mode = int(self.state.mode.get()),
                 curve_path=self.state.file_paths[0].get(),
                 pitch_path=self.state.file_paths[1].get(),
                 coord_path=self.state.file_paths[2].get(),
@@ -29,6 +29,7 @@ class TaskWorker(threading.Thread):
             )
             process = MainProcess(databundle, self.design_context)
             process.run_with_callback(progress_callback=self.queue.put)
+            logger.debug(f' 모든 프로세스 처리 완료')
         except Exception as e:
             logger.error(f"작업 처리 중 오류 발생: {e}", exc_info=True)
 
