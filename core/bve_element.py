@@ -1,27 +1,25 @@
-from utils.util import Direction
-
-class Element:
+class BVEFreeobj:
     """
-    브래킷,전주 ,전선 요소 상위클래스
+    BVE 프리오브젝트 객체
     Attributes:
         name(str):  이름
-        index(int): 오브젝트 인덱스
-        element_type(str) :  타입
-        positionx(float): freeobj x offset
-        positiony(float): freeobj y offset
+        track_position: 블록 시작점
+        rail_index: 레일인덱스
+        object_index(int): 오브젝트 인덱스
+        position_x(float): freeobj x offset
+        position_y(float): freeobj y offset
         yaw(float): freeobj yaw
         pitch(float): freeobj pitch
-        direction(Direction):  방향(Direction)
+        roll: freeobj roll
         """
 
     def __init__(self):
         self.name: str = ''
-        self.index: int = 0
-        self.element_type: str = ''
-        self.positionx: float = 0.0
-        self.positiony: float = 0.0
-        self.yaw: float = 0.0  # 전선의 평면각도
-        self.pitch: float = 0.0  # 전선의 종단각도
-        self.roll: float = 0.0  # 전선의 roll각도
-
-        self.direction: Direction = Direction.LEFT
+        self.track_position: float = 0.0
+        self.object_index: int = 0
+        self.rail_index: int = 0
+        self.position_x: float = 0.0
+        self.position_y: float = 0.0
+        self.yaw: float = 0.0
+        self.pitch: float = 0.0
+        self.roll: float = 0.0
