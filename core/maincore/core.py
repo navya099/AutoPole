@@ -1,8 +1,6 @@
 from core.maincore.proceess_step import ProcessStep
 from core.maincore.progress_event import ProgressEvent, ProgressType
-from utils.logger import logger
 from fileio.dataloader import DataBundle, DataLoader
-from fileio.jsonexporter import JsonExporter
 from core.BRACKET.bracket_manager import BracketManager
 from core.BRACKET.brackrt_fittings.bracket_fitting_manager import BracketFittingManager
 from core.FEEDER.feeder_manager import FeederManager

@@ -6,8 +6,8 @@ from core.MAST.mast_spec import MastSpec
 from core.MAST.mastdata import MastDesign
 from core.POLE.pole_refdata import PoleRefData
 from point3d import Point3d
-
 from utils.util import Direction
+
 class PolePlaceDATA:
     """
         전주 설비 전체를 나타내는 개체 데이터 구조
@@ -30,6 +30,7 @@ class PolePlaceDATA:
         self.masts: list[MastDesign] = []
         self.brackets: list[BracketDesign] = []
         self.feeders: list[FeederDATA] =  []
+        self.fittings = []
         self.ref: PoleRefData | None = None
         self.track_index: int = 0
         self.pos: float = 0.0

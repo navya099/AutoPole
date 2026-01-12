@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from utils.logger import logger
-from geometry.alignment import BVEAlignment
+from geometryor.alignment import BVEAlignment
 from structures.structure import StructureCollection
 from .fileloader import TxTFileHandler, ExcelFileHandler, PolylineHandler
 

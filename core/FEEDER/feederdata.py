@@ -1,4 +1,4 @@
-from core.bve_element import Element
+from core.bve_element import BVEFreeobj
 from core.design_element import DesignElement
 
 

@@ -16,7 +16,7 @@ class BveEngine(SerializationEngine):
             "mast": MastEmitter(),
             "feeder": FeederEmitter(),
             "bracket": BracketEmitter(),
-            "fitings" : BracketFittingsEmitter(),
+            "fittings" : BracketFittingsEmitter(),
             "wire": WireEmitter()
         }
     def begin(self):

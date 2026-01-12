@@ -1,6 +1,4 @@
-from core.bve_element import Element
 from core.design_element import DesignElement
-
 
 class MastDesign(DesignElement):
     """전주 설계 정보

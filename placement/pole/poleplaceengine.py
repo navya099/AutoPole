@@ -23,7 +23,9 @@ class PolePlaceIRBuilder:
                 position=pole.coord,
                 direction=mast.direction,
                 meta={"section": pole.current_section,
-                      "gauge": pole.gauge}
+                      "gauge": pole.gauge,
+                      "postnumber": pole.post_number,
+                      "curve": pole.ref.curve_type}
             ))
 
         # Bracket
@@ -64,7 +66,7 @@ class PolePlaceIRBuilder:
             position = pole.coord.copy()
             apply_position = self.calculator.calc_offset_position(pole, fitting.stagger)
             irs.append(RailwayIR(
-                category="fitting",
+                category="fittings",
                 code=fitting.code,
                 track=track,
                 position=apply_position,   # 필요 시 offset 적용
