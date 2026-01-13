@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 from placement.place_batch_manager import PlaceBatchManager
 
@@ -36,3 +36,4 @@ class PlacementBuildeWindow(tk.Toplevel):
     def run(self):
         ir = PlaceBatchManager(self.design_context)
         ir.run()
+        messagebox.showinfo('정보', "데이터 생성 완료")

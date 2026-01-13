@@ -4,6 +4,7 @@ from engine.bveengine.emitor.feeder_emitor import FeederEmitter
 from engine.bveengine.emitor.fittin_emitor import BracketFittingsEmitter
 from engine.bveengine.emitor.mast_emitor import MastEmitter
 from engine.bveengine.emitor.wire_emitor import WireEmitter
+from engine.interface.irgroup import IRGroup
 from engine.interface.railwatir import RailwayIR
 from engine.interface.serilalize_interfece import SerializationEngine
 
@@ -30,6 +31,14 @@ class BveEngine(SerializationEngine):
         obj = emitter.emit(ir)
         self.lines.append(self.serialize(obj,comment=ir.category))
 
+    def emit_group(self, group: IRGroup):
+        self.lines.append(
+            f"Post {group.key.post_number} / Track {group.key.track}"
+        )
+
+        for ir in group.irs:
+            self.emit(ir)
+
     def end(self):
         self.lines.append(",; BVE END")
         return "\n".join(self.lines)
@@ -38,11 +47,11 @@ class BveEngine(SerializationEngine):
         lines = []
 
         if comment:
-            lines.append(f'.;{comment}')
+            lines.append(f',;{comment}')
 
         lines.append(
-            f".freeobj {obj.position_x};{obj.object_index};"
-            f"{obj.rail_index};{obj.position_y};"
+            f".freeobj {obj.rail_index};{obj.object_index};"
+            f"{obj.position_x};{obj.position_y};"
             f"{obj.yaw};{obj.pitch};{obj.roll};"
         )
 

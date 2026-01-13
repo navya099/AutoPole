@@ -9,10 +9,10 @@ class BVEExporter:
         self.engine = BveEngine()
         self.name = 'BVEExporter'
 
-    def export(self, irs: list[RailwayIR]):
+    def export(self, groups: list[RailwayIR]):
         self.engine.begin()
 
-        for ir in irs:
-            self.engine.emit(ir)
+        for group in sorted(groups, key=lambda g: g.key.pos):
+            self.engine.emit_group(group)
 
         return self.engine.end()
