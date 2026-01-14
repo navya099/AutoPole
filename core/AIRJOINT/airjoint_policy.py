@@ -74,23 +74,56 @@ class AIRJOINTPolicy(BracketPolicy):
         return {pos : [self._decide_base(index, pole, speed)]}
 
     def second_pole_process(self, pos, pole, speed):
-        #항상 FI
-        f_spec = self.decide_f_bracket(pole, speed, variant=BracketVariant.SHORT)
-        i_spec = self.decide_default_bracket(default_type=BracketBaseType.I, pole=pole, speed=speed)
+        if pole.track_index == 0:
+            f_spec = self.decide_f_bracket(
+                pole, speed, variant=BracketVariant.SHORT
+            )
+            i_spec = self.decide_aj_bracket(
+                default_type=BracketBaseType.I,
+                pole=pole,
+                speed=speed
+            )
+            specs = [f_spec, i_spec]
 
-        return {pos : [f_spec, i_spec]}
+        elif pole.track_index == 1:
+            o_spec = self.decide_aj_bracket(
+                default_type=BracketBaseType.O,
+                pole=pole,
+                speed=speed
+            )
+            f_spec = self.decide_f_bracket(
+                pole, speed, variant=BracketVariant.SHORT
+            )
+            specs = [f_spec, o_spec]
+
+        else:
+            specs = []
+
+        return {pos: specs}
 
     def third_pole_process(self, pos, pole, speed):
-
-        aj_spec1 = self.decide_aj_bracket(default_type=BracketBaseType.O,pole=pole, speed=speed)
-        aj_spec2 = self.decide_aj_bracket(default_type=BracketBaseType.O, pole=pole, speed=speed)
+        if pole.track_index == 0:
+            aj_spec1 = self.decide_aj_bracket(default_type=BracketBaseType.I,pole=pole, speed=speed)
+            aj_spec2 = self.decide_aj_bracket(default_type=BracketBaseType.O, pole=pole, speed=speed)
+        elif pole.track_index == 1:
+            aj_spec1 = self.decide_aj_bracket(default_type=BracketBaseType.O, pole=pole, speed=speed)
+            aj_spec2 = self.decide_aj_bracket(default_type=BracketBaseType.I, pole=pole, speed=speed)
+        else:
+            aj_spec1 = []
+            aj_spec2 = []
         return {pos: [aj_spec1, aj_spec2]}
 
     def forth_pole_process(self, pos, pole, speed):
-        f_spec = self.decide_f_bracket(pole, speed, variant=BracketVariant.LONG)
-        o_spec = self.decide_default_bracket(default_type=BracketBaseType.O, pole=pole, speed=speed)
-
-        return {pos : [o_spec, f_spec]}
+        if pole.track_index == 0:
+            spec1 = self.decide_f_bracket(pole, speed, variant=BracketVariant.LONG)
+            spec2 = self.decide_aj_bracket(default_type=BracketBaseType.O, pole=pole, speed=speed)
+        elif pole.track_index == 1:
+            spec1 = self.decide_f_bracket(pole, speed, variant=BracketVariant.LONG)
+            spec2 = self.decide_aj_bracket(default_type=BracketBaseType.I, pole=pole, speed=speed)
+        else:
+            spec1 = []
+            spec2 = []
+        return {pos : [spec1, spec2]}
 
     def end_pole_process(self, spec, pos):
         # endpole은 시작전주와 동일
