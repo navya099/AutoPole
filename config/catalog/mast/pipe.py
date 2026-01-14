@@ -1,4 +1,4 @@
-from mast_material import MastMaterial
+from .mast_material import MastMaterial
 
 PIPE_MASTS: dict[int, MastMaterial] = {
     1370: MastMaterial(

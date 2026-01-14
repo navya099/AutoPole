@@ -1,6 +1,6 @@
-from config.catalog.mast import MastMaterial
-from pipe import PIPE_MASTS
-from hbeam import HBEAM_MASTS
+from .mast_material import MastMaterial
+from .pipe import PIPE_MASTS
+from .hbeam import HBEAM_MASTS
 from utils.util import to_inch
 
 

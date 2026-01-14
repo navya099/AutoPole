@@ -1,4 +1,4 @@
-from mast_material import MastMaterial
+from .mast_material import MastMaterial
 
 HBEAM_MASTS: dict[int, MastMaterial] = {
     619: MastMaterial(

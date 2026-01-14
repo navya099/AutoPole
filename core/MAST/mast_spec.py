@@ -7,3 +7,4 @@ from utils.util import Direction
 class MastSpec:
     index: int
     direction: Direction
+    name: str

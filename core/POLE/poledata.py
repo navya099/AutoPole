@@ -68,6 +68,7 @@ class PolePlaceDATA:
             mast = MastDesign()
             mast.code = spec.index
             mast.direction = spec.direction
+            mast.name = spec.name
             self.masts.append(mast)
 
 
