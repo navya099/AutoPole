@@ -32,28 +32,36 @@ class BracketManager(BaseManager):
                     logger.exception(f"Bracket 생성 실패 (index={group_index})")
 
     def _build_airjoint_brackets(self):
-
         """에어조인트 정책용 브래킷"""
+
         pole_map = {
-            pole.pos: pole
+            (pole.pos, pole.track_index): pole
             for group in self.collection
             for pole in group
         }
+
         group_index_map = {
-            pole.pos: group_index
+            (pole.pos, pole.track_index): group_index
             for group_index, group in enumerate(self.collection)
             for pole in group
         }
 
         aj_policy = AIRJOINTPolicy()
-        #이미 기본 정책에서 에어조인트구간만 판별함
-        for cluster in self.airjoint_clusters:
-            results = aj_policy.decide_airjoint(cluster, pole_map,group_index_map, self.loader.databudle.designspeed)
 
-            for pos, specs in results.items():
-                pole = pole_map.get(pos)
+        for cluster in self.airjoint_clusters:
+            results = aj_policy.decide_airjoint(
+                cluster,
+                pole_map,
+                group_index_map,
+                self.loader.databudle.designspeed
+            )
+
+            for (pos, track_index), specs in results.items():
+                pole = pole_map.get((pos, track_index))
                 if not pole:
-                    logger.warning(f"AIRJOINT pole 누락: pos={pos}")
+                    logger.warning(
+                        f"AIRJOINT pole 누락: pos={pos}, track={track_index}"
+                    )
                     continue
 
                 pole.brackets.extend(specs)

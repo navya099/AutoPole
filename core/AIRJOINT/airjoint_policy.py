@@ -7,22 +7,68 @@ from core.POLE.poledata import PolePlaceDATA
 
 class AIRJOINTPolicy(BracketPolicy):
     def decide_airjoint(
-        self,cluster: AirJointCluster,
-        pole_map: dict[int, PolePlaceDATA],
-        group_index_map: dict[int, int],
-        speed: int
-    ) -> dict[int, list[BracketSpec]]:
+            self,
+            cluster: AirJointCluster,
+            pole_map: dict[tuple[float, int], PolePlaceDATA],
+            group_index_map: dict[tuple[float, int], int],
+            speed: int
+    ) -> dict[tuple[float, int], list[BracketSpec]]:
 
         first_pos, second_pos, third_pos, fourth_pos, end_pos = cluster.positions[:5]
-        first_index = group_index_map[first_pos]
+        results = {}
 
-        first_spec = self.first_pole_process(first_index, first_pos, pole_map[first_pos], speed)
-        second_spec = self.second_pole_process(second_pos, pole_map[second_pos], speed)
-        third_spec = self.third_pole_process(third_pos, pole_map[third_pos], speed)
-        forth_spec = self.forth_pole_process(fourth_pos, pole_map[fourth_pos], speed)
-        end_spec = self.end_pole_process(first_spec, end_pos)
+        # cluster 구간에 존재하는 track들만 처리
+        track_indices = {
+            track for (pos, track) in pole_map.keys()
+            if pos in cluster.positions
+        }
 
-        return {**first_spec , **second_spec , **third_spec , **forth_spec , **end_spec}
+        for track_index in track_indices:
+            first_key = (first_pos, track_index)
+            if first_key not in pole_map:
+                continue
+
+            first_group_index = group_index_map[first_key]
+
+            first_spec = self.first_pole_process(
+                first_group_index,
+                first_pos,
+                pole_map[first_key],
+                speed
+            )
+
+            second_spec = self.second_pole_process(
+                second_pos,
+                pole_map[(second_pos, track_index)],
+                speed
+            )
+
+            third_spec = self.third_pole_process(
+                third_pos,
+                pole_map[(third_pos, track_index)],
+                speed
+            )
+
+            forth_spec = self.forth_pole_process(
+                fourth_pos,
+                pole_map[(fourth_pos, track_index)],
+                speed
+            )
+
+            end_spec = self.end_pole_process(first_spec, end_pos)
+
+            # key를 (pos, track)으로 병합
+            for pos, specs in {
+                **first_spec,
+                **second_spec,
+                **third_spec,
+                **forth_spec,
+                **end_spec,
+            }.items():
+                results[(pos, track_index)] = specs
+
+        return results
+
     def first_pole_process(self, index, pos, pole, speed):
         #fisrtpole은 시작전주라서  BracketPolicy의 deice_base 로직 재사용
         return {pos : [self._decide_base(index, pole, speed)]}
