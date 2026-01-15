@@ -1,12 +1,15 @@
 from config.catalog.bracket.bracket_type_enum import BracketBaseType
+from core.AIRJOINT.airjoint_messangerwire_fitting import AirJointMessengerWireFitting
+from core.AIRJOINT.airjoint_steadyarm_fitting import AirJointSteadyArmFitting
 from core.BRACKET.brackrt_fittings.messenger_wire_fittings import MessengerWireFitting
 from core.BRACKET.brackrt_fittings.steady_arm import SteadyArmFitting
 from core.BRACKET.brackrt_fittings.wire_fitting import WireFixedFitting
 
 
 class BracketFittingManager:
-    def __init__(self, design_context):
+    def __init__(self, design_context, clusters):
         self.context = design_context
+        self.clusters = clusters
 
     def run(self, polecollection):
         speed = self.context.speed
@@ -21,14 +24,27 @@ class BracketFittingManager:
     def _select_strategies(self, bracket):
         strategies = []
 
-        # 타입별
+        # ✅ AirJoint 전용 fitting 우선
+        if bracket.airjoint:
+            strategies.extend(self._select_airjoint_strategies(bracket))
+            return strategies  # ← 일반 전략 차단 (중요)
+
+        # ===== 기존 로직 =====
         if bracket.bracket_type in {BracketBaseType.I, BracketBaseType.O}:
             strategies.append(SteadyArmFitting())
         elif bracket.bracket_type == BracketBaseType.F:
             strategies.append(WireFixedFitting())
 
-        # 공통
         strategies.append(MessengerWireFitting())
+        return strategies
+
+    def _select_airjoint_strategies(self, bracket):
+        strategies = []
+        #곡선당김금구
+        strategies.append(AirJointSteadyArmFitting())
+        #지지금구
+        strategies.append(AirJointMessengerWireFitting())
 
         return strategies
+
 
