@@ -154,3 +154,26 @@ class TrackSide(Enum):
     Inner = 0
     Outer = 1
     NONE = 2
+
+def offsets(n, s):
+    if n == 1:
+        return [0.0]
+    if n == 2:
+        return [-s * 0.5, s * 0.5]
+    # n >= 3
+    return [(i - (n - 1) / 2) * s * 0.5 for i in range(n)]
+
+def format_distance(number):
+    negative = False
+    if number < 0:
+        negative = True
+        number = abs(number)
+
+    km = int(number) // 1000
+    remainder = "{:.2f}".format(number % 1000)
+    formatted_distance = "{:d}km{:06.2f}".format(km, float(remainder))
+
+    if negative:
+        formatted_distance = "-" + formatted_distance
+
+    return formatted_distance
