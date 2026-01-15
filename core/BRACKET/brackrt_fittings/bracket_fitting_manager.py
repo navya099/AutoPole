@@ -6,14 +6,13 @@ from core.BRACKET.brackrt_fittings.wire_fitting import WireFixedFitting
 
 class BracketFittingManager:
     def run(self, polecollection):
-        for group_index, group in enumerate(polecollection):
-            for pole in group:
-                for bracket in pole.brackets:
-                    strategies = self._select_strategies(bracket)
-                    for strategy in strategies:
-                        placement = strategy.fit(pole, bracket)
-                        if placement is not None:
-                            pole.fittings.append(placement)
+        for pole in polecollection.iter_poles():
+            pole.fittings.clear()
+            for bracket in pole.brackets:
+                for strategy in self._select_strategies(bracket):
+                    placement = strategy.fit(pole, bracket)
+                    if placement:
+                        pole.fittings.append(placement)
 
     def _select_strategies(self, bracket):
         strategies = []
