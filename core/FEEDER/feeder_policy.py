@@ -1,5 +1,6 @@
 from config.catalog.feeder.feeder_catalog import FeederCatalog
 from core.FEEDER.feeder_spec import FeederSpec
+from utils.util import TrackSide, Direction
 
 
 class FeederPolicy:
@@ -32,10 +33,19 @@ class FeederPolicy:
             (pole.ref.structure_type, speed),
             1234
         )
+
+        # 전주 기준 반대편 설치 (예시 규칙)
+        feeder_direction = (
+            Direction.LEFT
+            if pole.direction == Direction.RIGHT
+            else Direction.RIGHT
+        )
+
         mat = FeederCatalog.get(index)
+
         return FeederSpec(
-            type = 'AF',
+            type='AF',
             index=index,
             name=mat.name,
-            direction=pole.direction,
+            direction=feeder_direction,
         )
