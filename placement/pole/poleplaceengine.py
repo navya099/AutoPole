@@ -1,8 +1,8 @@
 from core.POLE.poledata import PolePlaceDATA
 from engine.interface.ircalculaotor import IRCalculator
 from engine.interface.railwatir import RailwayIR
-from utils.util import Direction, TrackSide, offsets
-
+from utils.util import Direction, offsets
+from collections import defaultdict
 
 class PolePlaceIRBuilder:
     def __init__(self):
@@ -70,22 +70,36 @@ class PolePlaceIRBuilder:
             ))
 
         # Fittings (금구류)
-        n = len(pole.fittings)
-        s = 1
-        offs = offsets(n, s)  # 🔥 한 번만 계산
-        for i, fitting in enumerate(pole.fittings):
-            apply_position = self.calculator.calc_offset_position(pole, fitting.stagger)
-            irs.append(RailwayIR(
-                station=pos + offs[i],
-                category="fittings",
-                code=fitting.code,
-                track=track,
-                position=apply_position,   # 필요 시 offset 적용
-                direction=direction,
-                meta={
-                    "stagger": fitting.stagger,
-                    "type": fitting.type,
-                } # ← fitting 객체 책임
-            ))
+
+        bracket_code_to_slot = {
+            br.index: i
+            for i, br in enumerate(pole.brackets)
+        }
+
+        fittings_by_bracket_code = defaultdict(list)
+        for fitting in pole.fittings:
+            fittings_by_bracket_code[fitting.bracket_index].append(fitting)
+
+        for br_code, slot in bracket_code_to_slot.items():
+            station = pos + offs[slot]
+
+            for fitting in fittings_by_bracket_code.get(br_code, []):
+                apply_position = self.calculator.calc_offset_position(
+                    pole, fitting.stagger
+                )
+
+                irs.append(RailwayIR(
+                    station=station,
+                    category="fittings",
+                    name=fitting.type.name,
+                    code=fitting.code,
+                    track=track,
+                    position=apply_position,
+                    direction=direction,
+                    meta={
+                        "stagger": fitting.stagger,
+                        "type": fitting.type,
+                    }
+                ))
 
         return irs
