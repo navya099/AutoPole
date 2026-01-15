@@ -1,7 +1,8 @@
 from core.POLE.poledata import PolePlaceDATA
 from engine.interface.ircalculaotor import IRCalculator
 from engine.interface.railwatir import RailwayIR
-from utils.util import Direction
+from utils.util import Direction, TrackSide, offsets
+
 
 class PolePlaceIRBuilder:
     def __init__(self):
@@ -13,11 +14,13 @@ class PolePlaceIRBuilder:
         track = pole.track_index
         direction = pole.direction
         base = pole.ref.center_coord #선형중심좌표
-
+        pos = pole.pos
         # Mast
         for mast in pole.masts:
             irs.append(RailwayIR(
+                station=pos,
                 category="mast",
+                name=mast.name,
                 code=mast.code,
                 track=track,
                 position=pole.coord,
@@ -29,10 +32,14 @@ class PolePlaceIRBuilder:
             ))
 
         # Bracket
-        for br in pole.brackets:
-            is_flipped = br.direction != Direction.RIGHT
+        n = len(pole.brackets)
+        s = 1
+        offs = offsets(n, s)  # 🔥 한 번만 계산
+        for i, br in enumerate(pole.brackets):
+            is_flipped = pole.direction != Direction.LEFT
 
             irs.append(RailwayIR(
+                station=pos + offs[i],
                 category="bracket",
                 code=br.index,
                 track=track,
@@ -50,6 +57,7 @@ class PolePlaceIRBuilder:
         for feeder in pole.feeders:
             is_flipped = feeder.direction != Direction.RIGHT
             irs.append(RailwayIR(
+                station=pole.pos,
                 category="feeder",
                 code=feeder.code,
                 track=track,
@@ -62,10 +70,13 @@ class PolePlaceIRBuilder:
             ))
 
         # Fittings (금구류)
-        for fitting in pole.fittings:
-            position = pole.coord.copy()
+        n = len(pole.fittings)
+        s = 1
+        offs = offsets(n, s)  # 🔥 한 번만 계산
+        for i, fitting in enumerate(pole.fittings):
             apply_position = self.calculator.calc_offset_position(pole, fitting.stagger)
             irs.append(RailwayIR(
+                station=pos + offs[i],
                 category="fittings",
                 code=fitting.code,
                 track=track,
@@ -73,6 +84,7 @@ class PolePlaceIRBuilder:
                 direction=direction,
                 meta={
                     "stagger": fitting.stagger,
+                    "type": fitting.type,
                 } # ← fitting 객체 책임
             ))
 
