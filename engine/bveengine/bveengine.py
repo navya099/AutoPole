@@ -8,6 +8,7 @@ from engine.interface.irgroup import IRGroup
 from engine.interface.railwatir import RailwayIR
 from engine.interface.serilalize_interfece import SerializationEngine
 
+from utils.util import format_distance
 
 class BveEngine(SerializationEngine):
 
@@ -32,9 +33,9 @@ class BveEngine(SerializationEngine):
         self.lines.append(self.serialize(obj,comment=ir.category))
 
     def emit_group(self, group: IRGroup):
+
         self.lines.append(
-            f"Post {group.key.post_number} / Track {group.key.track}"
-        )
+            f",;{group.key.post_number}호주 / Track {group.key.track} / STA. {format_distance(group.key.pos)}")
 
         for ir in group.irs:
             self.emit(ir)
@@ -50,6 +51,8 @@ class BveEngine(SerializationEngine):
             lines.append(f',;{comment}')
 
         lines.append(
+            f',;{obj.name},;\n'
+            f'{obj.track_position}\n'
             f".freeobj {obj.rail_index};{obj.object_index};"
             f"{obj.position_x};{obj.position_y};"
             f"{obj.yaw};{obj.pitch};{obj.roll};"
