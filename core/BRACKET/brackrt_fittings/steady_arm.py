@@ -11,7 +11,7 @@ class SteadyArmFitting(BracketFittingStrategy):
     def fit(self, pole, bracket_spec ,speed):
 
         #표준 피팅
-        stagger = self.fit_stagger(bracket_spec)
+        stagger = self.fit_standard_stagger(bracket_spec)
         arm_install_direction = self.define_arm_install_direction(bracket_spec)
         if arm_install_direction == TrackSide.Inner:
             mat = FittingCatalog.get(speed, FittingRole.STEADYARM_LEFT)
@@ -26,7 +26,7 @@ class SteadyArmFitting(BracketFittingStrategy):
             type=FittingTypeEnum.SteadyArm
         )
 
-    def fit_stagger(self, bracket_spec):
+    def fit_standard_stagger(self, bracket_spec):
         if bracket_spec.bracket_type == BracketBaseType.I:
             stagger = -0.2
         elif bracket_spec.bracket_type == BracketBaseType.O:
