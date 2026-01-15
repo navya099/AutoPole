@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from core.AIRJOINT.airjoint_state import AirJointState
 from utils.util import Direction
 
 
@@ -12,6 +13,7 @@ class BracketSpec:
         gauge: 건식게이지
         name: 브래킷 풀네임
         index: 브래킷 인덱스
+        airjoint: 에어조인트 상태
     """    # I / O
     bracket_type: str      # inner / outer
     install_type: str      # OpG / Tn
@@ -19,3 +21,6 @@ class BracketSpec:
     direction: Direction
     name: str
     index: int
+    airjoint: AirJointState | None = None
+
+
