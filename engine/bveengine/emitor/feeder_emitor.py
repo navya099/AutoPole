@@ -8,7 +8,7 @@ class FeederEmitter:
         obj.name = ir.name
         obj.object_index = ir.code
         obj.rail_index = ir.track
-
+        obj.track_position = ir.station
         obj.yaw = 180 if ir.meta.get("is_flipped") else 0
         obj.position_x = 0
         obj.position_y = 0

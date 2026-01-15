@@ -6,6 +6,7 @@ class BracketEmitter:
     def emit(self, ir: RailwayIR) -> BVEFreeobj:
         obj = BVEFreeobj()
         obj.name = ir.name
+        obj.track_position = ir.station
         obj.object_index = ir.code
         obj.rail_index = ir.track
 

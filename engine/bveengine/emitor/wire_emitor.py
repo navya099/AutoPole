@@ -8,7 +8,7 @@ class WireEmitter:
         obj.name = ir.name
         obj.object_index = ir.code
         obj.rail_index = ir.track
-
+        obj.track_position = ir.station
         obj.yaw = ir.geometry.plan_angle
         obj.position_x = ir.meta.get("offset_x",0.0)
         obj.position_y = ir.meta.get("offset_y",0.0)

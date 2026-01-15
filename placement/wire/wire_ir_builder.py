@@ -34,6 +34,7 @@ class WireIRBuilder:
                 placement.offset_y
             )
             irs.append(RailwayIR(
+                station=bundle.start_ref.pos,
                 category="wire",
                 code=placement.index,
                 track=trackidx,

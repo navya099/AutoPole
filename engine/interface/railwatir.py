@@ -8,6 +8,7 @@ from utils.util import Direction
 class RailwayIR:
     """추상 설계 렌더 인터페이스
     Attributes:
+        station: 측점
         category: 카테고리 # mast / bracket / feeder / fitting
         code: 제품 코드
         track: 선로번호
@@ -17,6 +18,7 @@ class RailwayIR:
         meta: 메타정보
         geometry: 지오메트리 정보
     """
+    station: float
     category: str
     code: int
     track: int

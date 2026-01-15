@@ -7,6 +7,7 @@ class MastEmitter:
         obj = BVEFreeobj()
         obj.name = ir.name
         obj.object_index = ir.code
+        obj.track_position = ir.station
         obj.rail_index = ir.track
         if "gauge" not in ir.meta:
             raise ValueError("Mast IR requires 'gauge'")
