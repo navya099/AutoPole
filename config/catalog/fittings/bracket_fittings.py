@@ -3,6 +3,7 @@ from config.catalog.fittings.fitting_role import FittingRole
 class FittingCatalog:
     _dic = {
         150: {
+            FittingRole.NORMAL_MESSENGER: FittingMaterial(499, "일반용 조가선 지지금구"),
             FittingRole.AIRJOINT_MESSENGER: FittingMaterial(499, "에어조인트용 조가선 지지금구"),
             FittingRole.INVALID_LIFT_MESSENGER: FittingMaterial(1292, "무효인상용 조가선 지지금구"),
             FittingRole.INVALID_LIFT_CONTACT: FittingMaterial(1295, "무효인상용 전차선 지지금구"),
@@ -10,6 +11,7 @@ class FittingCatalog:
             FittingRole.STEADYARM_RIGHT: FittingMaterial(1294, "곡선당김금구R"),
         },
         250: {
+            FittingRole.NORMAL_MESSENGER: FittingMaterial(1295, "일반용 조가선 지지금구"),
             FittingRole.AIRJOINT_MESSENGER: FittingMaterial(1279, "에어조인트용 조가선 지지금구"),
             FittingRole.INVALID_LIFT_MESSENGER: FittingMaterial(1281, "무효인상용 조가선 지지금구"),
             FittingRole.INVALID_LIFT_CONTACT: FittingMaterial(1282, "무효인상용 전차선 지지금구"),
@@ -17,6 +19,7 @@ class FittingCatalog:
             FittingRole.STEADYARM_RIGHT: FittingMaterial(1283, "곡선당김금구R"),
         },
         350: {
+            FittingRole.NORMAL_MESSENGER: FittingMaterial(499, "일반용 조가선 지지금구"),
             FittingRole.AIRJOINT_MESSENGER: FittingMaterial(586, "에어조인트용 조가선 지지금구"),
             FittingRole.INVALID_LIFT_MESSENGER: FittingMaterial(584, "무효인상용 조가선 지지금구"),
             FittingRole.INVALID_LIFT_CONTACT: FittingMaterial(585, "무효인상용 전차선 지지금구"),
