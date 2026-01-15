@@ -84,7 +84,7 @@ class MainProcess:
         self.bracket_manager.run()
 
     def install_bracket_fitting(self):
-        fitting_manager = BracketFittingManager()
+        fitting_manager = BracketFittingManager(self.design_context)
         fitting_manager.run(self.design_context.poledata)
 
     def install_feeder(self):
