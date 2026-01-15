@@ -5,12 +5,16 @@ from core.BRACKET.brackrt_fittings.wire_fitting import WireFixedFitting
 
 
 class BracketFittingManager:
+    def __init__(self, design_context):
+        self.context = design_context
+
     def run(self, polecollection):
+        speed = self.context.speed
         for pole in polecollection.iter_poles():
             pole.fittings.clear()
             for bracket in pole.brackets:
                 for strategy in self._select_strategies(bracket):
-                    placement = strategy.fit(pole, bracket)
+                    placement = strategy.fit(pole, bracket, speed)
                     if placement:
                         pole.fittings.append(placement)
 

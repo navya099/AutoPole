@@ -1,4 +1,6 @@
 from config.catalog.bracket.bracket_type_enum import BracketBaseType
+from config.catalog.fittings.bracket_fittings import FittingCatalog
+from config.catalog.fittings.fitting_role import FittingRole
 from core.BRACKET.brackrt_fittings.bracket_fitting_strategy import BracketFittingStrategy
 from core.BRACKET.brackrt_fittings.fitting_type_enum import FittingTypeEnum
 from core.BRACKET.brackrt_fittings.steady_arm_placer import SteadyArmPlacement
@@ -6,16 +8,20 @@ from utils.util import TrackSide
 
 
 class SteadyArmFitting(BracketFittingStrategy):
-    def fit(self, pole, bracket_spec):
+    def fit(self, pole, bracket_spec ,speed):
 
         #표준 피팅
         stagger = self.fit_stagger(bracket_spec)
         arm_install_direction = self.define_arm_install_direction(bracket_spec)
+        if arm_install_direction == TrackSide.Inner:
+            mat = FittingCatalog.get(speed, FittingRole.STEADYARM_LEFT)
+        else:
+            mat = FittingCatalog.get(speed, FittingRole.STEADYARM_RIGHT)
         return SteadyArmPlacement(
             pole_pos=pole.pos,
             bracket_index=bracket_spec.index,
             side=arm_install_direction,
-            code=0,#임시
+            code=mat.code,
             stagger=stagger,
             type=FittingTypeEnum.SteadyArm
         )
