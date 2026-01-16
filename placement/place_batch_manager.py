@@ -22,28 +22,32 @@ class PlaceBatchManager:
         for pole in self.data.poledata.iter_poles():
             key = IRGroupKey(
                 track=pole.track_index,
-                pos=pole.ref.pos,
-                post_number=pole.post_number
+                pos=pole.ref.pos
             )
 
             group = IRGroup(key)
+            group.meta = {'postnumber': pole.post_number}
             for ir in self.pole_builder.build(pole):
+
                 group.add(ir)
 
             groups[key] = group
 
         # 2️⃣ 전선 IR (track별)
-        for track_idx in self.data.poledata.track_indices():
-            for bundle in self.data.wiredata.iter_bundles():
-                key = IRGroupKey(
-                    track=track_idx,
-                    pos=bundle.start_ref.pos
-                )
+        for bundle in self.data.wiredata.iter_bundles():
 
-                group = groups.get(key)
-                if group:
-                    for ir in self.wire_builder.build(bundle, track_idx):
-                        group.add(ir)
+            # ✅ bundle이 속한 track만 처리
+            track_idx = bundle.track_index
+
+            key = IRGroupKey(
+                track=track_idx,
+                pos=bundle.start_ref.pos
+            )
+
+            group = groups.get(key)
+            if group:
+                for ir in self.wire_builder.build(bundle):
+                    group.add(ir)
 
         # 3️⃣ 최종 결과
         self.data.irs = list(groups.values())
