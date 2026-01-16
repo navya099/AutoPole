@@ -35,7 +35,7 @@ class BveEngine(SerializationEngine):
     def emit_group(self, group: IRGroup):
 
         self.lines.append(
-            f",;{group.key.post_number}호주 / Track {group.key.track} / STA. {format_distance(group.key.pos)}")
+            f",;{group.meta.get('postnumber','')},Track {group.key.track} / STA. {format_distance(group.key.pos)}")
 
         for ir in group.irs:
             self.emit(ir)
@@ -51,7 +51,7 @@ class BveEngine(SerializationEngine):
             lines.append(f',;{comment}')
 
         lines.append(
-            f',;{obj.name},;\n'
+            f',;{obj.name}\n'
             f'{obj.track_position}\n'
             f".freeobj {obj.rail_index};{obj.object_index};"
             f"{obj.position_x};{obj.position_y};"

@@ -4,4 +4,3 @@ from dataclasses import dataclass
 class IRGroupKey:
     track: int
     pos: float
-    post_number: int | None = None

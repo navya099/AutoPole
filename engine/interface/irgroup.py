@@ -7,7 +7,7 @@ from engine.interface.railwatir import RailwayIR
 class IRGroup:
     key: IRGroupKey
     irs: list[RailwayIR] = field(default_factory=list)
-
+    meta: dict = field(default_factory=dict)
     # ─────────────────────
     # group-level behavior
     # ─────────────────────
