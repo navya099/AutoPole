@@ -12,11 +12,11 @@ class WireIRBuilder:
         self.calculator = IRCalculator()
         self.pole_lookup = pole_lookup
 
-    def build(self, bundle: WireBundle, trackidx: int) -> list[RailwayIR]:
+    def build(self, bundle: WireBundle) -> list[RailwayIR]:
         irs = []
-
-        start_pole = self.pole_lookup.get_by_ref(bundle.start_ref, trackidx)
-        end_pole = self.pole_lookup.get_by_ref(bundle.end_ref, trackidx)
+        track_index = bundle.track_index
+        start_pole = self.pole_lookup.get_by_ref(bundle.start_ref, track_index)
+        end_pole = self.pole_lookup.get_by_ref(bundle.end_ref, track_index)
 
         if not start_pole or not end_pole:
             return irs
@@ -37,7 +37,7 @@ class WireIRBuilder:
                 station=bundle.start_ref.pos,
                 category="wire",
                 code=placement.index,
-                track=trackidx,
+                track=track_index,
                 geometry=WireGeometry(start=st, end=ed),
                 meta={"wire_type": wire.type,
                       "offset_x":placement.offset_x,

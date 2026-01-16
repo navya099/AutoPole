@@ -25,6 +25,7 @@ class WireManager(BaseManager):
                     index=i,
                     start_ref=start_pole.ref,
                     end_ref=end_pole.ref,
+                    track_index=track_idx  # ✅ 핵심 추가
                 )
 
                 if bundle:

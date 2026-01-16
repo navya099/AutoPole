@@ -4,12 +4,12 @@ from core.WIRE.wire_policy import WIRE_POLICY_TABLE
 
 
 class WireBuilder:
-    def build_bundle(self, index, start_ref, end_ref):
+    def build_bundle(self, index, start_ref, end_ref, track_index):
         if start_ref.is_last or end_ref is None:
             return None
 
         policy = WIRE_POLICY_TABLE[start_ref.section_info]
-        bundle = WireBundle(index, start_ref, end_ref)
+        bundle = WireBundle(index, start_ref, end_ref, track_index)
 
         for wire_type, rule in policy.items():
             count = rule.decide(start_ref, end_ref)
