@@ -177,3 +177,17 @@ def format_distance(number):
         formatted_distance = "-" + formatted_distance
 
     return formatted_distance
+
+def treeview_to_dict(treeview, columns):
+    """
+    Treeview 데이터를 딕셔너리 리스트로 변환
+    :param treeview: ttk.Treeview 객체
+    :param columns: 컬럼명 리스트
+    :return: [{col:value, ...}, ...] 형태의 리스트
+    """
+    data = []
+    for iid in treeview.get_children():
+        values = list(treeview.item(iid, "values"))
+        row_dict = {col: val for col, val in zip(columns, values)}
+        data.append(row_dict)
+    return data
